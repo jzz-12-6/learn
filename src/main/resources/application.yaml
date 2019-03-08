@@ -1,0 +1,30 @@
+﻿spring:
+  profiles:
+    active: dev
+  messages:
+    basename: i18n/messages
+    encoding: UTF-8
+  mail:
+    host: smtp.gmail.com
+    username: test@gmail.com
+    password: test
+    default-encoding: utf-8
+    port: 465
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+          starttls:
+            enable: true
+            required: true
+          auth: true
+          port: 465
+          ssl:
+            enable: true
+            socketFactory:
+              port: 465
+              class: javax.net.ssl.SSLSocketFactory
+              fallback: false"
+
+
+
