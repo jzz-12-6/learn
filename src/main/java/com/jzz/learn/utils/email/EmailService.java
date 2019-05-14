@@ -1,7 +1,7 @@
 package com.jzz.learn.utils.email;
 
 /**
- * 邮件服务 设计模式
+ * 邮件服务
  * @author jzz
  * @date 2019年3月8日
  */
