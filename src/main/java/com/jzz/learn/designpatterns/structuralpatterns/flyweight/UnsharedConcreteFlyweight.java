@@ -1,5 +1,6 @@
 package com.jzz.learn.designpatterns.structuralpatterns.flyweight;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 /**
  * 非享元角色
@@ -7,6 +8,7 @@ import lombok.Data;
  * @date 2019-5-14
  */
 @Data
+@AllArgsConstructor
 public class UnsharedConcreteFlyweight {
     private String info;
 }
