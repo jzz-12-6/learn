@@ -3,7 +3,7 @@ package com.jzz.learn.designpatterns.structural.proxy.staticstate;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 真实主题（Real Subject）类
+ * 真实主题（Real AbstractSubject）类
  * 实现了抽象主题中的具体业务，是代理对象所代表的真实对象，是最终要引用的对象。
  * @author jzz
  * @date 2019-5-15
