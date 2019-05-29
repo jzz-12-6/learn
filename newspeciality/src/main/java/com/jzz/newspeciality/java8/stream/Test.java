@@ -18,8 +18,6 @@ public class Test {
 
     public static void main(String[] args) {
         Stream<Integer> limit = Stream.iterate(1, l -> l + 1).limit(10);
-        Stream.generate(Math::random);
-        System.out.println(limit.count());
-
+        limit.flatMap()
     }
 }

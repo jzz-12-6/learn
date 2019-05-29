@@ -11,7 +11,7 @@ import java.util.stream.Stream;
  * @author jzz
  * @date 2019/5/24
  */
-public class StreamTest {
+public class StreamAPI {
     static List<Integer> list = new ArrayList<>();
 
     static {

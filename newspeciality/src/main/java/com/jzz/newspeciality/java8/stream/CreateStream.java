@@ -1,6 +1,11 @@
 package com.jzz.newspeciality.java8.stream;
 
+import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
@@ -39,5 +44,22 @@ public class CreateStream {
          * 合并两个流
          */
         Stream.concat(Stream.empty(),Stream.empty());
+        /**
+         * 数组中获取
+         */
+        Stream<Integer> arrayStream = Arrays.stream(new Integer[]{1,2,3,4});
+        /**
+         * 集合中获取
+         */
+        Stream<Integer> listStream = new ArrayList<Integer>().stream();
+        /**
+         * String中获取
+         */
+        IntStream charStream = "abcd".chars();
+        /**
+         * 正则中获取流
+         */
+        String str = "/d";
+        Stream<String> patternStream = Pattern.compile(",").splitAsStream(str);
     }
 }
