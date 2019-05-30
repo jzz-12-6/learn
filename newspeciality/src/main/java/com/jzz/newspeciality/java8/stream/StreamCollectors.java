@@ -1,6 +1,7 @@
 package com.jzz.newspeciality.java8.stream;
 
 import java.util.*;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -46,6 +47,12 @@ public class StreamCollectors {
          * @param mapFactory Supplier 提供新的空的容器，将结果插入其中
          */
         Map<Integer, Integer> collectMap4 = stream.collect(Collectors.toMap(i -> i, i -> i,(oldValue,newValue)->oldValue,HashMap::new));
+        /**
+         * 不可变 不能进行add remove操作
+         */
+//        Collectors.toUnmodifiableList();
+//        Collectors.toUnmodifiableMap(()->,()->);
+//        Collectors.toUnmodifiableSet();
 
         //join
 
@@ -67,8 +74,44 @@ public class StreamCollectors {
          */
         stringStream.collect(Collectors.joining(",","",""));
 
-        Map<IntStream, List<String>> collect2 = stringStream.collect(Collectors.groupingBy(String::chars));
+        // groupingBy 分组统计
+        /**
+         *@param classifier Function 分组器 map的key
+         */
+        Map<Integer, List<String>> groupingBy1 = stringStream.collect(Collectors.groupingBy(String::length));
+        /**
+         *  @param downstream Collector 对与每个键相关联的值执行缩减操作
+         * 统计数量
+         */
+        Map<Integer, Long> collect1 = stringStream.collect(Collectors.groupingBy(String::length, Collectors.counting()));
+        /**
+         * 按照长度分类，key为拼接字符串
+         */
+        Map<Integer, String> collect2 = stringStream.collect(Collectors.groupingBy(String::length, Collectors.mapping(l -> l, Collectors.joining(","))));
+        /**
+         * @param classifier Function 分组器 map的key
+         * @param mapFactory  Supplier 容器
+         * @param downstream Collector 对与每个键相关联的值执行缩减操作
+         */
+        stringStream.collect(Collectors.groupingBy(String::length,HashMap::new, Collectors.counting()));
+        //partitioningBy
 
+        /**
+         * @param predicate Predicate 分组条件
+         * true为一组，false为一组
+         */
+        Map<Boolean, List<String>> collect3 = stringStream.collect(Collectors.partitioningBy(String::isBlank));
+        /**
+         * @param downstream  Collector 分组的value
+         */
+        stringStream.collect(Collectors.partitioningBy(String::isBlank,Collectors.mapping(l->l,Collectors.joining(","))));
 
+        //collectingAndThen
+        /**
+         * 包裹另一个转换器,对其结果应用转换函数
+         * @param downstream 收集器
+         * @param finisher 转换结果的收集器
+         */
+        List<String> collect4 = stringStream.map(l -> l).collect(Collectors.collectingAndThen(Collectors.toList(), l -> Collections.unmodifiableList(l)));
     }
 }
