@@ -2,6 +2,7 @@ package com.jzz.newspeciality.java8.time.duration;
 
 import java.time.*;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.Temporal;
 
 /**
  * @author jzz
@@ -52,9 +53,76 @@ public class DurationAPI {
         Duration.between(LocalTime.NOON,LocalTime.now());
         /**
          * 获取所请求单元的值
+         * 仅支持 SECONDS  NANOS
+         * 0
          */
         duration.get(ChronoUnit.SECONDS);
-        System.out.println( duration.get(ChronoUnit.DAYS));
-        Duration.between(LocalTime.now(),LocalTime.now());
+        /**
+         * 获取此持续时间支持的单位集 SECONDS  NANOS
+         */
+        duration.getUnits();
+        /**
+         * 检查此持续时间是否为零长度
+         */
+        duration.isZero();
+        /**
+         * 检查此持续时间是否为负数
+         */
+        duration.isNegative();
+        /**
+         * 使用指定的秒数返回此持续时间的副本。相当于set,返回新实例
+         */
+        duration.withSeconds(1);
+        duration.withNanos(1);
+        /**
+         * add操作
+         */
+        duration.plus(Duration.ZERO);
+        /**
+         * sub操作
+         */
+        duration.minus(Duration.ZERO);
+        /**
+         * 乘法操作
+         */
+        duration.multipliedBy(2);
+        /**
+         * 除法操作
+         */
+        duration.dividedBy(2);
+        /**
+         * 取负数
+         */
+        duration.negated();
+        /**
+         * 绝对值操作
+         */
+        duration.abs();
+        /**
+         * add操作
+         */
+        Temporal temporal = duration.addTo(LocalDateTime.now());
+        /**
+         * 相减操作
+         */
+        duration.subtractFrom(LocalDateTime.now());
+        /**
+         * 转为多少天
+         */
+        duration.toDays();
+        /**
+         * 55
+         */
+        Duration.ofHours(55).toHours();
+        duration.toHours();
+        /**
+         * 返回小时部分
+         * 7
+         */
+        Duration.ofHours(55).toHoursPart();
+        /**
+         * 转其他格式的duration
+         */
+        duration.truncatedTo(ChronoUnit.SECONDS);
     }
 }
