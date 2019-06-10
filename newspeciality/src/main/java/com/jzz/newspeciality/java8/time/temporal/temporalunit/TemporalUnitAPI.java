@@ -21,6 +21,11 @@ public class TemporalUnitAPI {
          * true
          */
         temporalUnit.isDurationEstimated();
+        /**
+         * 检查此单位是否代表日期的组成部分。
+         * true
+         */
+        temporalUnit.isDateBased();
         System.out.println( temporalUnit.isDurationEstimated());
         System.out.println(ChronoUnit.YEARS.isDurationEstimated());
     }
