@@ -1,4 +1,4 @@
-package com.jzz.newspeciality.java8.time.temporal;
+package com.jzz.newspeciality.java8.time.temporal.temporalfield;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoField;
@@ -6,7 +6,7 @@ import java.time.temporal.TemporalField;
 import java.util.Locale;
 
 /**
- * 日期时间字段（如一年的某天，一周的某天）
+ * 日期时间字段（如一年的某天，一周的某天）主要表示范围和具体
  * 常用单位定义在 {@link ChronoField}.
  * 此类是不可变，且线程安全的
  * @author jzz
@@ -58,7 +58,6 @@ public class TemporalFieldAPI {
          * 使用时态对象获取此字段的有效值范围
          * 1-365
          */
-        System.out.println(temporalField.rangeRefinedBy(LocalDate.now()));
         temporalField.rangeRefinedBy(LocalDate.now());
         /**
          * 从指定的时态对象获取此字段的值
@@ -71,6 +70,5 @@ public class TemporalFieldAPI {
          * 相当于set，但是返回新对象
          */
         LocalDate localDate = temporalField.adjustInto(LocalDate.now(), 1);
-        System.out.println(localDate);
     }
 }
