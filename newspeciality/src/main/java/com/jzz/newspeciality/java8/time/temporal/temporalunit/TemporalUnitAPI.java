@@ -1,5 +1,6 @@
 package com.jzz.newspeciality.java8.time.temporal.temporalunit;
 
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 
@@ -26,7 +27,26 @@ public class TemporalUnitAPI {
          * true
          */
         temporalUnit.isDateBased();
-        System.out.println( temporalUnit.isDurationEstimated());
-        System.out.println(ChronoUnit.YEARS.isDurationEstimated());
+        /**
+         * 检查此单位是否代表某个时间的组成部分。
+         * false
+         */
+        temporalUnit.isTimeBased();
+        /**
+         * 检查指定的时态对象是否支持此单位。
+         * true
+         */
+        temporalUnit.isSupportedBy(LocalDate.now());
+        /**
+         * 返回指定时间段的指定时间对象的副本。
+         * LocalDate.now() 2019-06-10
+         * 2019-06-15
+         */
+        LocalDate localDate = temporalUnit.addTo(LocalDate.now(), 5);
+        /**
+         * 指定日期相差多久
+         * 1
+         */
+        temporalUnit.between(LocalDate.now(),LocalDate.now().plusDays(1));
     }
 }
