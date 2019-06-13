@@ -1,4 +1,4 @@
-package com.jzz.newspeciality.java8.time.temporalamount;
+package com.jzz.newspeciality.java8.time.temporal.temporalamount;
 
 import java.time.LocalDate;
 import java.time.Period;
