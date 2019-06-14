@@ -1,9 +1,6 @@
 package com.jzz.newspeciality.java8.time.temporal.temporalquery;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.time.chrono.Chronology;
 import java.time.temporal.TemporalQueries;
 import java.time.temporal.TemporalQuery;
@@ -57,6 +54,9 @@ public class TemporalQueryAPI {
          * Nanos
          */
         precision.queryFrom(LocalTime.now());
-
+        /**
+         * 转ZoneOffset
+         */
+        TemporalQuery<ZoneOffset> offset = TemporalQueries.offset();
     }
 }
