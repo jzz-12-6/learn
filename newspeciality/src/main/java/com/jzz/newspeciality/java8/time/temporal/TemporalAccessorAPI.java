@@ -1,13 +1,14 @@
 package com.jzz.newspeciality.java8.time.temporal;
 
 import java.time.LocalDate;
-import java.time.temporal.TemporalAccessor;
+import java.time.ZoneId;
+import java.time.temporal.*;
 
 /**
- * 斜杠
+ *
  * 定义对时态对象的只读访问的框架级接口，
- * 例如日期，时间，偏移或这些的某种组合。
- * @author jzz lastname
+ * 例如日期，时间，偏移或这些的基本接口类型
+ * @author jzz
  * @date 2019/6/6
  */
 public class TemporalAccessorAPI {
@@ -17,13 +18,23 @@ public class TemporalAccessorAPI {
          *
          */
         TemporalAccessor t = LocalDate.now();
-        String imgUrl = "https://im-headimg-hongkong.oss-cn-hongkong.aliyuncs.com/f-1559734941738NQLKA8BB.jpg?x-oss-process=image/resize,h_400";
-        int index = imgUrl.indexOf('?');
-        if(index != -1){
-            imgUrl = imgUrl.substring(0,index);
-        }
-        int x = imgUrl.lastIndexOf('/');
-        String fileId = imgUrl.substring(x+1);
-        System.out.println(fileId);
+        /**
+         * 是否支持指定字段
+         */
+        boolean supported = t.isSupported(ChronoField.DAY_OF_YEAR);
+        /**
+         * 获取指定字段的范围
+         */
+        ValueRange range = t.range(ChronoField.DAY_OF_YEAR);
+        /**
+         * 获取指定范围的值
+         */
+        int i = t.get(ChronoField.DAY_OF_YEAR);
+        t.getLong(ChronoField.DAY_OF_YEAR);
+        /**
+         * 将时间转为其他格式
+         */
+        LocalDate query = t.query(LocalDate::from);
+        ZoneId query1 = t.query(TemporalQueries.zoneId());
     }
 }
