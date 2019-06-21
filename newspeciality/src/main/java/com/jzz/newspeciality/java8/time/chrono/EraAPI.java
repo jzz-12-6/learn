@@ -1,8 +1,12 @@
 package com.jzz.newspeciality.java8.time.chrono;
 
+import org.springframework.util.DigestUtils;
+
+import java.time.LocalDateTime;
 import java.time.chrono.Era;
 import java.time.chrono.IsoEra;
 import java.time.format.TextStyle;
+import java.time.temporal.*;
 import java.util.Locale;
 
 /**
@@ -28,6 +32,35 @@ public class EraAPI {
          * 公元
          */
         String displayName = era.getDisplayName(TextStyle.FULL, Locale.CHINA);
-        System.out.println(displayName);
+
+        //实现方法
+        /**
+         * 是否支持指定字段
+         * @param TemporalField 时间字段
+         * false
+         */
+        boolean supported = era.isSupported(ChronoField.DAY_OF_YEAR);
+        /**
+         * 指定字段范围
+         * @param TemporalField 时间字段
+         * 0 - 1
+         */
+        ValueRange range = era.range(ChronoField.ERA);
+        /**
+         * 获取指定字段的值
+         * @param TemporalField 时间字段
+         */
+        int i = era.get(ChronoField.ERA);
+        long eraLong = era.getLong(ChronoField.ERA);
+        /**
+         * 查询指定字段
+         * @param TemporalQuery<R> 查询语句
+         */
+        TemporalUnit query = era.query(TemporalQueries.precision());
+        /**
+         * 调整日期
+         * @param Temporal 日期
+         */
+        Temporal temporal = era.adjustInto(LocalDateTime.now());
     }
 }
