@@ -24,8 +24,7 @@ public class EchoClient {
         this.port = port;
     }
 
-    public void start()
-        throws Exception {
+    public void start() throws Exception {
         EventLoopGroup group = new NioEventLoopGroup();
         try {
             //创建 Bootstrap

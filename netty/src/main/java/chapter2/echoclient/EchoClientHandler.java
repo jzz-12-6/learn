@@ -18,6 +18,7 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
         //当被通知 Channel是活跃的时候，发送一条消息
+        //将在一个连接建立时被调用
         ctx.writeAndFlush(Unpooled.copiedBuffer("Netty rocks!",
                 CharsetUtil.UTF_8));
     }
@@ -25,6 +26,7 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
     @Override
     protected void messageReceived(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
         //记录已接收消息的转储
+        //每当接收数据时，都会调用这个方法，服务器发送的消息可能分块接收
         System.out.println(
                 "Client received: " + msg.toString(CharsetUtil.UTF_8));
     }
