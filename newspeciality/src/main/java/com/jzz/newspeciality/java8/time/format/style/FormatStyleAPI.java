@@ -29,10 +29,5 @@ public class FormatStyleAPI {
          * 2019/6/22 下午5:01
          */
         FormatStyle styleShort = FormatStyle.SHORT;
-
-        System.out.println(ZonedDateTime.now().format(DateTimeFormatter.ofLocalizedDateTime(styleFull)));
-        System.out.println(ZonedDateTime.now().format(DateTimeFormatter.ofLocalizedDateTime(styleLong)));
-        System.out.println(ZonedDateTime.now().format(DateTimeFormatter.ofLocalizedDateTime(styleMedium)));
-        System.out.println(ZonedDateTime.now().format(DateTimeFormatter.ofLocalizedDateTime(styleShort)));
     }
 }

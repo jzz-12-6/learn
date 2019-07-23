@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
+ * 递归
  * @author jzz
  * @date 2019/7/4
  */
@@ -12,7 +13,118 @@ public class ArraysProgram {
 
 
     public static void main(String[] args) {
-        intersect(new int[]{1,2,2,1},new int[]{2,2});
+        System.out.println(fib(4));
+    }
+
+    public static int fib(int N) {
+        if(N == 0){
+            return 0;
+        }
+        if(N == 1){
+            return 1;
+        }
+        return fib(N-2) + fib(N-1);
+    }
+    public static int heightChecker(int[] heights) {
+        int[] copy = Arrays.copyOf(heights, heights.length);
+        Arrays.sort(copy);
+        int length = copy.length;
+        int count = 0;
+        for (int i = 0; i < length; i++) {
+            if(copy[i] != heights[i]){
+                count++;
+            }
+        }
+        return count;
+    }
+    /**
+     * 832. 翻转图像
+     * 给定一个二进制矩阵 A，我们想先水平翻转图像，然后反转图像并返回结果。
+     *
+     * 水平翻转图片就是将图片的每一行都进行翻转，即逆序。例如，水平翻转 [1, 1, 0] 的结果是 [0, 1, 1]。
+     *
+     * 反转图片的意思是图片中的 0 全部被 1 替换， 1 全部被 0 替换。例如，反转 [0, 1, 1] 的结果是 [1, 0, 0]。
+     * 输入: [[1,1,0],[1,0,1],[0,0,0]]
+     * 输出: [[1,0,0],[0,1,0],[1,1,1]]
+     * 解释: 首先翻转每一行: [[0,1,1],[1,0,1],[0,0,0]]；
+     *      然后反转图片: [[1,0,0],[0,1,0],[1,1,1]]
+     * @param A 指定数组
+     * @return int[][]
+     */
+    public static int[][] flipAndInvertImage(int[][] A) {
+        int length = A.length;
+        for(int i = 0;i<length;i++){
+            swapAndReverse(A[i]);
+        }
+        return A;
+    }
+    private static void swapAndReverse(int[] a){
+        int length = a.length;
+        for(int i = 0;i<length/2;i++){
+            int temp = a[length-i-1] == 0 ? 1 : 0;
+            int temp2 = a[i]  == 0 ? 1 : 0;
+            a[i] = temp;
+            a[length-i-1] = temp2;
+        }
+        int half = length / 2;
+        if(half * 2 != length  ){
+            int temp2 = a[half]  == 0 ? 1 : 0;
+            a[half] = temp2;
+        }
+    }
+    /**
+     * 119. 杨辉三角 II
+     * 给定一个非负索引 k，其中 k ≤ 33，返回杨辉三角的第 k 行。
+     * 输入: 3
+     * 输出: [1,3,3,1]
+     * @param rowIndex 行数
+     * @return List<Integer>
+     */
+    public List<Integer> getRow(int rowIndex) {
+        if (rowIndex == 1){
+            return Collections.singletonList(1);
+        }else if(rowIndex == 2){
+            return Arrays.asList(1,1);
+        }else {
+            List<Integer> list = new ArrayList<>(rowIndex);
+            list.add(1);
+            int temp = rowIndex -1;
+            int length = rowIndex / 2;
+            if(length * 2 != rowIndex){
+                length++;
+            }
+            for (int i = 1;i<length;i++){
+                list.add(temp);
+
+            }
+            return list;
+        }
+    }
+    /**
+     * 189. 旋转数组
+     * 给定一个数组，将数组中的元素向右移动 k 个位置，其中 k 是非负数。
+     * 输入: [1,2,3,4,5,6,7] 和 k = 3
+     * 输出: [5,6,7,1,2,3,4]
+     * 解释:
+     * 向右旋转 1 步: [7,1,2,3,4,5,6]
+     * 向右旋转 2 步: [6,7,1,2,3,4,5]
+     * 向右旋转 3 步: [5,6,7,1,2,3,4]
+     * @param nums 数组
+     * @param k 移动的位置
+     */
+    public static void rotate(int[] nums, int k) {
+        if(k<=0){
+            return;
+        }
+        int length = nums.length;
+        for(int j =0;j<k;j++){
+            int last = nums[length-1];
+            for(int i = length -1;i>0;i--){
+                nums[i] = nums[i-1];
+            }
+            nums[0] = last;
+        }
+        System.out.println(Arrays.toString(nums));
     }
 
     public static int[] intersect(int[] nums1, int[] nums2) {
@@ -30,10 +142,8 @@ public class ArraysProgram {
         map1.forEach((k,v)->{
             Integer i = map2.get(k);
             if(i!=null){
-
-            }
-            if(i != null && i.equals(v)){
-                for(int j =0;j<v;j++){
+               int num = Math.min(i,v);
+                for(int j =0;j<num;j++){
                     list.add(k);
                 }
             }

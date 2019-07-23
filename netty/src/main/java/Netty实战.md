@@ -1,6 +1,6 @@
-netty 实战
+# netty 实战
 
-第1章 Netty——异步和事件驱动
+# 第1章 Netty——异步和事件驱动
 
 netty设计架构方法和设计原则：
 
@@ -8,7 +8,7 @@ netty设计架构方法和设计原则：
 * 模块化和可复用性
 * 可测试性
 
-1.1 Java网络编程
+## 1.1 Java网络编程
 
 ```java
 /**
@@ -434,3 +434,46 @@ public class EchoClient {
 3. 为服务器连接创建了一个InetSocketAddress实例
 4. 当连接被建立时，一个EchoClientHandler实例会被安装到ChannelPipeline中
 5. 当一切设置都完成后，调用Bootstrap.connect()方法连接到远程节点
+
+# 第 3 章 Netty的组件和设计
+
+Netty 解决了两个相应的关注领域，我们可将其大致标记为技术的和体系结构的。首先，它的基于 Java NIO 的异步的和事件驱动的实现，保证了高负载下应用程序性能的最大化和可伸缩性。其次，Netty 也包含了一组设计模式，将应用程序逻辑从网络层解耦，简化了开发过程，同时也最大限度地提高了可测试性、模块化以及代码的可重用性。
+
+## 3.1 Channel、EventLoop 和 ChannelFuture
+
+### 3.1.1 Channel 接口
+
+基本的 I/O 操作（bind()、connect()、read()和 write()）依赖于底层网络传输所提供的原语。Netty 的 Channel 接口所提供的 API，大大地降低了直接使用 Socket 类的复杂性。
+
+### 3.1.2 EventLoop接口
+
+​	EventLoop定义了Netty的核心对象，用于处理连接的生命周期中所发生的事件。
+
+ 	1. 一个EventLoopGroup包含一个或者多个EventLoop	
+ 	2. 一个EventLoop在它的生命周期内只和一个Thread绑定
+ 	3. 所有由EventLoop处理的I/O事件都将在它专有的Thread上被处理
+ 	4. 一个Channel在它的生命周期内只注册于一个EventLoop
+ 	5. 一个EventLoop可能被分配给一个或多个Channel
+
+一个给定Channel的I/O操作都是由相同的Thread执行的，实际上消除了同步的需要
+
+### 3.1.3 ChannelFuture接口
+
+ChannelFuture中的addListener()方法注册了一个ChannelFutureListener，以便在某个操作完成时得到通知
+
+## 3.2 ChannelHandler 和 ChannelPipeline
+
+### 3.2.1 ChannelHandler 接口
+
+ChannelHandler 充当了所有处理入站和出站数据的应用程序逻辑的容器。ChannelHandler 接收入站事件和数据，这些数据随后将会被你的应用程序的业务逻辑所处理。
+
+### 3.2.2 ChannelPipeline 接口
+
+ 	ChannelPipeline 提供了ChannelHandler 链的容器，并定义了用于在该链上传播入站和出站事件流的API。当Channel被创建时，它会自动分配到它专属的ChannelPipeline 。
+
+​	过程：
+
+1. 一个ChannelInitializer的实现被注册到了ServerBootstrap中
+2. 当ChannelInitializer.initChannel()方法被调用时，ChannelInitializer将在 ChannelPipeline 中安装一组自定义的 ChannelHandler；
+3. ChannelInitializer 将它自己从 ChannelPipeline 中移除
+
