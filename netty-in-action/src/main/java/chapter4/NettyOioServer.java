@@ -17,10 +17,8 @@ import java.nio.charset.Charset;
  * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
  */
 public class NettyOioServer {
-    public void server(int port)
-            throws Exception {
-        final ByteBuf buf =
-                Unpooled.unreleasableBuffer(Unpooled.copiedBuffer("Hi!\r\n", Charset.forName("UTF-8")));
+    public void server(int port) throws Exception {
+        final ByteBuf buf = Unpooled.unreleasableBuffer(Unpooled.copiedBuffer("Hi!\r\n", Charset.forName("UTF-8")));
         EventLoopGroup group = new OioEventLoopGroup();
         try {
             //创建 ServerBootstrap
@@ -32,15 +30,12 @@ public class NettyOioServer {
                     //指定 ChannelInitializer，对于每个已接受的连接都调用它
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
-                        public void initChannel(SocketChannel ch)
-                                throws Exception {
+                        public void initChannel(SocketChannel ch) {
                                 ch.pipeline().addLast(
                                     //添加一个 ChannelInboundHandlerAdapter以拦截和处理事件
-                                    new ChannelInboundHandlerAdapter() {
+                                    new ChannelHandlerAdapter() {
                                         @Override
-                                        public void channelActive(
-                                                ChannelHandlerContext ctx)
-                                                throws Exception {
+                                        public void channelActive(ChannelHandlerContext ctx) {
                                             ctx.writeAndFlush(buf.duplicate())
                                                     .addListener(
                                                             //将消息写到客户端，并添加 ChannelFutureListener，

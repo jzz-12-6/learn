@@ -13,8 +13,124 @@ public class ArraysProgram {
 
 
     public static void main(String[] args) {
-        System.out.println(fib(4));
+        commonChars(new String[]{"cool","lock","cook"});
     }
+
+    /**
+     * 1002. 查找常用字符
+     * 给定仅有小写字母组成的字符串数组 A，返回列表中的每个字符串中都显示的全部字符（包括重复字符）组成的列表。
+     * 例如，如果一个字符在每个字符串中出现 3 次，但不是 4 次，则需要在最终答案中包含该字符 3 次。
+     * 输入：["bella","label","roller"]
+     * 输出：["e","l","l"]
+     * @param A
+     * @return
+     */
+    public static List<String> commonChars(String[] A) {
+        List<String> list = new ArrayList<>();
+        int[] result = new int[26];
+        char[] chars = A[0].toCharArray();
+        for(char c : chars){
+            result[c-'a'] = result[c-'a'] + 1;
+        }
+        List<Integer[]> integerList = new ArrayList<>(A.length-1);
+        for(int i = 1;i<A.length;i++){
+            Integer[] integers = new Integer[26];
+            chars = A[i].toCharArray();
+            for(char c : chars){
+                Integer integer = integers[c - 'a'];
+                if(integer == null){
+                    integer = 0;
+                }
+                integers[c-'a'] = integer + 1;
+            }
+            integerList.add(integers);
+        }
+        for(Integer[] ints : integerList){
+            for(int j =0 ;j<26 ;j++){
+                Integer min = ints[j];
+                if(min == null){
+                    min = 0;
+                }
+                result[j] = Math.min(min,result[j]);
+            }
+        }
+        for(int i =0;i<26;i++){
+            int i1 = result[i];
+            if(i1 != 0){
+                for(int j =0;j<i1;j++){
+                    char c = (char)(i+'a');
+                    list.add(c+"");
+                }
+            }
+        }
+        return list;
+    }
+
+    /**
+     * 922. 按奇偶排序数组 II
+     * 给定一个非负整数数组 A， A 中一半整数是奇数，一半整数是偶数。
+     *
+     * 对数组进行排序，以便当 A[i] 为奇数时，i 也是奇数；当 A[i] 为偶数时， i 也是偶数。
+     * 输入：[4,2,5,7]
+     * 输出：[4,5,2,7]
+     * 解释：[4,7,2,5]，[2,5,4,7]，[2,7,4,5] 也会被接受。
+     * @param A 数组
+     * @return 排序后
+     */
+    public static int[] sortArrayByParityII(int[] A) {
+        //第一种 一个数组存奇数，一个数组存偶数，合并数组
+        //直接操作原数组，双指针遍历
+        int length = A.length;
+        int firstIndex = 0;
+        for(;firstIndex<length;firstIndex++){
+            int lastIndex = length -1;
+            if(firstIndex % 2 == 0){
+                if( A[firstIndex] % 2 != 0){
+                    while (true){
+                        if (lastIndex % 2 != 0 && A[lastIndex] % 2 ==0){
+                            int temp = A[firstIndex];
+                            A[firstIndex] = A[lastIndex];
+                            A[lastIndex] = temp;
+                            break;
+                        }
+                        lastIndex--;
+                    }
+                }
+            }
+            else {
+                if( A[firstIndex] % 2 == 0){
+                    while (true){
+                        if (lastIndex % 2 == 0 && A[lastIndex] % 2 !=0){
+                            int temp = A[firstIndex];
+                            A[firstIndex] = A[lastIndex];
+                            A[lastIndex] = temp;
+                            break;
+                        }
+                        lastIndex--;
+                    }
+                }
+            }
+        }
+        return A;
+    }
+    /**
+     * 867. 转置矩阵
+     * 给定一个矩阵 A， 返回 A 的转置矩阵。
+     * 矩阵的转置是指将矩阵的主对角线翻转，交换矩阵的行索引与列索引。
+     * 输入：[[1,2,3],[4,5,6]]
+     * 输出：[[1,4],[2,5],[3,6]]
+     * @param A 矩阵
+     * @return 转置矩阵
+     */
+    public int[][] transpose(int[][] A) {
+        int length = A.length;
+        int[][] B = new int[length][A[0].length];
+        for(int i = 0 ; i < length;i++){
+
+        }
+        return B;
+    }
+
 
     public static int fib(int N) {
         if(N == 0){

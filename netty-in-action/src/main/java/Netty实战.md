@@ -477,3 +477,53 @@ ChannelHandler 充当了所有处理入站和出站数据的应用程序逻辑�
 2. 当ChannelInitializer.initChannel()方法被调用时，ChannelInitializer将在 ChannelPipeline 中安装一组自定义的 ChannelHandler；
 3. ChannelInitializer 将它自己从 ChannelPipeline 中移除
 
+ChannelHandler是处理ChannelPipeline 事件的任何代码的通用容器，这些对象接收事件、执行它们所实现的处理逻辑，并将数据传递给链中的下一个ChannelHandler。
+
+当ChannelHandler呗添加到ChannelPipeline 时，它将被分配一个ChannelHandlerContext，其代表了ChannelHandler和ChannelPipeline 之间的绑定。
+
+ChannelPipeline中的每个ChannelHandler将负责把事件转发到链中的下一个 ChannelHandler。这些适配器类（及它们的子类）将自动执行这个操作
+
+### 3.2.4 编码器和解码器
+
+ 将网络消息解码成JAVA对象，或者将JAVA对象编码成网络消息。这些基类的名称将类似于 ByteToMessageDecoder 或 MessageToByteEncoder。
+
+### 3.2.5 抽象类 SimpleChannelInboundHandler
+
+扩展基类 SimpleChannelInboundHandler<T>来接收解码消息。
+
+# 第4章 传输
+
+## 4.2 传输API
+
+```
+interface Channel extends AttributeMap, Comparable<Channel>
+interface ServerChannel extends Channel
+interface ChannelPipeline extends Iterable<Entry<String, ChannelHandler>>
+interface SocketChannel extends Channel
+```
+
+传输的核心是Interface Channel,用于所有的I/O操作。
+
+每个 Channel 都将会被分配一个 ChannelPipeline 和 ChannelConfig。ChannelConfig 包含了该 Channel 的所有配置设置，并且支持热更新。Channel是独一无二的，如果两个不同的Channel实例返回相同的散列码，那么AbstractChannel中的compareTo()方法的实现将会抛出一个 Error
+
+ChannelHandler的用途：
+
+1. 将数据从一种格式转换为另一种格式；
+2. 提供异常的通知
+3. 提供 Channel 变为活动的或者非活动的通知
+4. 提供当 Channel 注册到 EventLoop 或者从 EventLoop 注销时的通知；
+5. 提供有关用户自定义事件的通知
+
+Channel方法
+
+| 方法名       | 描述                            |
+| ------------ | ------------------------------- |
+| id           | 返回全局唯一标识符              |
+| eventLoop    | 返回分配给 Channel 的 EventLoop |
+| parent       | 返回上一层Channel               |
+| config       | 返回配置                        |
+| isOpen       | 是否打开状态                    |
+| isRegistered | 是否注册到EventLoop             |
+| isActive     | 是否激活状态                    |
+|              |                                 |
+

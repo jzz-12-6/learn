@@ -37,7 +37,7 @@ public class EchoServer {
     }
 
     public void start() throws Exception {
-        final EchoServerHandler serverHandler = new EchoServerHandler();
+        final chapter2.echoserver.EchoServerHandler serverHandler = new chapter2.echoserver.EchoServerHandler();
         //(1) 创建EventLoopGroup
         EventLoopGroup group = new NioEventLoopGroup();
         try {

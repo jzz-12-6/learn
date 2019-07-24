@@ -41,7 +41,7 @@ public class EchoClient {
                     public void initChannel(SocketChannel ch)
                         throws Exception {
                         ch.pipeline().addLast(
-                             new EchoClientHandler());
+                             new chapter2.echoclient.EchoClientHandler());
                     }
                 });
             //连接到远程节点，阻塞等待直到连接完成
