@@ -516,14 +516,103 @@ ChannelHandler的用途：
 
 Channel方法
 
-| 方法名       | 描述                            |
-| ------------ | ------------------------------- |
-| id           | 返回全局唯一标识符              |
-| eventLoop    | 返回分配给 Channel 的 EventLoop |
-| parent       | 返回上一层Channel               |
-| config       | 返回配置                        |
-| isOpen       | 是否打开状态                    |
-| isRegistered | 是否注册到EventLoop             |
-| isActive     | 是否激活状态                    |
-|              |                                 |
+| 方法名                | 描述                                                         |
+| --------------------- | ------------------------------------------------------------ |
+| id                    | 返回全局唯一标识符                                           |
+| eventLoop             | 返回分配给 Channel 的 EventLoop                              |
+| parent                | 返回上一层Channel                                            |
+| config                | 返回配置                                                     |
+| isOpen                | 是否打开状态                                                 |
+| isRegistered          | 是否注册到EventLoop                                          |
+| isActive              | 是否激活状态                                                 |
+| metadata              | 返回分配给 Channel 的 ChannelMetadata                        |
+| localAddress          | 返回本地的 SokcetAddress                                     |
+| remoteAddress         | 返回远程的 SocketAddress                                     |
+| closeFuture           | 返回Channel关闭时，收到通知的ChannelFuture，永远返回相同的实例 |
+| isWritable            | 是否可写，当I/O线程立即可写的时候返回true                    |
+| unsafe                | 返回Unsafe实例                                               |
+| pipeline              | 返回分配给 Channel 的 ChannelPipeline                        |
+| alloc                 | 返回指定的ByteBufAllocator用于分配ByteBuf                    |
+| newPromise            | 返回新的ChannelPromise                                       |
+| newProgressivePromise | 返回新的ChannelProgressivePromise                            |
+| newSucceededFuture    | 返回新的ChannelFuture，已经被标记成功                        |
+| newFailedFuture       | 标记失败返回新的ChannelFuture                                |
+| write                 | 将数据写到远程节点。这个数据将被传递给 ChannelPipeline，并且排队直到它被冲刷 |
+| flush                 | 将之前已写的数据冲刷到底层传输，如一个 Socket                |
+| writeAndFlush         | 一个简便的方法，等同于调用 write()并接着调用 flush()         |
+
+写数据并将其冲刷到远程节点这样的常规任务。
+
+```java
+ private static final Channel CHANNEL_FROM_SOMEWHERE = new NioSocketChannel();
+public static void writingToChannel() {
+        //创建Channel实例
+        Channel channel = CHANNEL_FROM_SOMEWHERE;
+        //创建持有要写数据的 ByteBuf
+        ByteBuf buf = Unpooled.copiedBuffer("your data", CharsetUtil.UTF_8);
+        ChannelFuture cf = channel.writeAndFlush(buf);
+        //添加 ChannelFutureListener 以便在写操作完成后接收通知
+        cf.addListener((ChannelFuture future)->{
+            //写操作完成，并且没有错误发生
+            if (future.isSuccess()) {
+                System.out.println("Write successful");
+            } else {
+                //记录错误
+                System.err.println("Write error");
+                future.cause().printStackTrace();
+            }
+        });
+    }
+```
+
+Netty的Channel 实现是线程安全的因此你可以存储一个到 Channel 的引用，并且每当你需要向远程节点写数据时，都可以使用它，消息将会被保证按顺序发送。
+
+```java
+public static void writingToChannelFromManyThreads() {
+        final Channel channel = CHANNEL_FROM_SOMEWHERE; 
+        //创建持有要写数据的ByteBuf
+        final ByteBuf buf = Unpooled.copiedBuffer("your data",
+                CharsetUtil.UTF_8);
+        //创建将数据写到Channel 的 Runnable
+        Runnable writer = ()-> channel.write(buf.duplicate());
+          
+        //获取到线程池Executor 的引用
+        Executor executor = Executors.newCachedThreadPool();
+
+        //递交写任务给线程池以便在某个线程中执行
+        // write in one thread
+        executor.execute(writer);
+
+        //递交另一个写任务以便在另一个线程中执行
+        // write in another thread
+        executor.execute(writer);
+        //...
+    }
+```
+
+## 4.3 内置的传输
+
+netty所提供的传输
+
+| 名称     | 包                          | 描述                                                         |
+| -------- | --------------------------- | ------------------------------------------------------------ |
+| NIO      | io.netty.channel.socket.nio | 使用 java.nio.channels 包作为基础——基于选择器的方式          |
+| Epoll    | io.netty.channel.epoll      | 由 JNI 驱动的 epoll()和非阻塞 IO。这个传输支持
+只有在Linux上可用的多种特性，如SO_REUSEPORT，比 NIO 传输更快，而且是完全非阻塞的 |
+| OIO      | io.netty.channel.socket.oio | 使用 java.net 包作为基础——使用阻塞流                         |
+| Local    | io.netty.channel.local      | 可以在 VM 内部通过管道进行通信的本地传输                     |
+| Embedded | io.netty.channel.embedded   | Embedded 传输，允许使用 ChannelHandler 而又不需要一个真正的基于网络的传输。这在测试你的ChannelHandler 实现时非常有用 |
+
+### 4.3.1 NIO(非阻塞I/O)
+
+​	NIO提供了一个所有IO操作的全异步实现，利用基于选择器的API，选择器相当于一个注册表，可以请求在Channel的状态发送变化时得到通知，选择器运行在一个检测状态变化并对其做出相应响应的线程上，在应用程序对状态的改变做出响应之后，选择器将会被重置，并重复这个过程
+
+选择器操作的位模式
+
+| 名称       | 描述                                                         |
+| ---------- | ------------------------------------------------------------ |
+| OP_ACCEPT  | 请求在接受新连接并创建 Channel 时获得通知                    |
+| OP_CONNECT | 请求在建立一个连接时获得通知                                 |
+| OP_READ    | 请求当数据已经就绪，可以从 Channel 中读取时获得通知          |
+| OP_WRITE   | 请求当可以向 Channel 中写更多的数据时获得通知。这处理了套接字缓冲区被完全填满时的情况，这种情况通常发生在数据的发送速度比远程节点可处理的速度更快的时候 |
 

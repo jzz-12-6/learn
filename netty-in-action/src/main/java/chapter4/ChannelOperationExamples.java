@@ -24,22 +24,20 @@ public class ChannelOperationExamples {
      * 代码清单 4-5 写出到 Channel
      */
     public static void writingToChannel() {
-        Channel channel = CHANNEL_FROM_SOMEWHERE; // Get the channel reference from somewhere
+        // Get the channel reference from somewhere
+        Channel channel = CHANNEL_FROM_SOMEWHERE;
         //创建持有要写数据的 ByteBuf
         ByteBuf buf = Unpooled.copiedBuffer("your data", CharsetUtil.UTF_8);
         ChannelFuture cf = channel.writeAndFlush(buf);
         //添加 ChannelFutureListener 以便在写操作完成后接收通知
-        cf.addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) {
-                //写操作完成，并且没有错误发生
-                if (future.isSuccess()) {
-                    System.out.println("Write successful");
-                } else {
-                    //记录错误
-                    System.err.println("Write error");
-                    future.cause().printStackTrace();
-                }
+        cf.addListener((ChannelFuture future)->{
+            //写操作完成，并且没有错误发生
+            if (future.isSuccess()) {
+                System.out.println("Write successful");
+            } else {
+                //记录错误
+                System.err.println("Write error");
+                future.cause().printStackTrace();
             }
         });
     }
@@ -48,17 +46,13 @@ public class ChannelOperationExamples {
      * 代码清单 4-6 从多个线程使用同一个 Channel
      */
     public static void writingToChannelFromManyThreads() {
-        final Channel channel = CHANNEL_FROM_SOMEWHERE; // Get the channel reference from somewhere
+        final Channel channel = CHANNEL_FROM_SOMEWHERE;
         //创建持有要写数据的ByteBuf
         final ByteBuf buf = Unpooled.copiedBuffer("your data",
                 CharsetUtil.UTF_8);
         //创建将数据写到Channel 的 Runnable
-        Runnable writer = new Runnable() {
-            @Override
-            public void run() {
-                channel.write(buf.duplicate());
-            }
-        };
+        Runnable writer = ()-> channel.write(buf.duplicate());
+
         //获取到线程池Executor 的引用
         Executor executor = Executors.newCachedThreadPool();
 

@@ -13,7 +13,118 @@ public class ArraysProgram {
 
 
     public static void main(String[] args) {
-        commonChars(new String[]{"cool","lock","cook"});
+        findDisappearedNumbers(new int[]{4,3,2,7,8,2,3,1});
+    }
+
+    /**
+     * 448. 找到所有数组中消失的数字
+     * 给定一个范围在  1 ≤ a[i] ≤ n ( n = 数组大小 ) 的 整型数组，数组中的元素一些出现了两次，另一些只出现一次。
+     *
+     * 找到所有在 [1, n] 范围之间没有出现在数组中的数字。
+     *
+     * 输入:
+     * [4,3,2,7,8,2,3,1]
+     * 输出:
+     * [5,6]
+     * @param nums 数组
+     * @return List<Integer>
+     */
+    public static List<Integer> findDisappearedNumbers(int[] nums) {
+        int length = nums.length;
+        Map<Integer,Integer> map = new HashMap<>(length);
+        for (int i = 1; i <= length; i++) {
+            map.put(i,i);
+        }
+        for(int i :nums){
+            map.remove(i);
+        }
+        return new ArrayList<>(map.keySet());
+    }
+    /**
+     * 1089. 复写零
+     * 给你一个长度固定的整数数组 arr，请你将该数组中出现的每个零都复写一遍，并将其余的元素向右平移。
+     *
+     * 注意：请不要在超过该数组长度的位置写入元素。
+     *
+     * 要求：请对输入的数组 就地 进行上述修改，不要从函数返回任何东西。
+     *
+     * 输入：[1,0,2,3,0,4,5,0]
+     * 输出：null
+     * 解释：调用函数后，输入的数组将被修改为：[1,0,0,2,3,0,0,4]
+     * @param arr 数组
+     */
+    public static void duplicateZeros(int[] arr) {
+        //第一种不开辟额外空间
+        int length = arr.length;
+//        for (int i = 0; i < length; i++) {
+//            if(arr[i] == 0){
+//                for (int j = length -1;j>i;j--){
+//                 //数组元素向后移动一位
+//                 arr[j] = arr[j-1];
+//                }
+//                if(i+1 < length){
+//                    arr[i+1] = 0;
+//                    i++;
+//                }
+//            }
+//        }
+        //开辟额外空间
+        int[] ints = new int[arr.length];
+        for (int i = 0,j=0; j < length; i++,j++) {
+            int i1 = arr[i];
+            ints[j] = i1;
+            if(i1 == 0 && j+1 <length){
+                ints[j+1] = 0;
+                j++;
+            }
+        }
+        for (int i = 0; i < length; i++) {
+            arr[i] = ints[i];
+        }
+        System.out.println(Arrays.toString(arr));
+    }
+    /**
+     * 1122. 数组的相对排序
+     * 给你两个数组，arr1 和 arr2，
+     *
+     * arr2 中的元素各不相同
+     * arr2 中的每个元素都出现在 arr1 中
+     * 对 arr1 中的元素进行排序，使 arr1 中项的相对顺序和 arr2 中的相对顺序相同。未在 arr2 中出现过的元素需要按照升序放在 arr1 的末尾。
+     *
+     *  输入：arr1 = [2,3,1,3,2,4,6,7,9,2,19], arr2 = [2,1,4,3,9,6]
+     * 输出：[2,2,2,1,4,3,3,9,6,7,19]
+     * @param arr1 待排序数组
+     * @param arr2 排序规则 包含
+     * @return int[]
+     */
+    public static int[] relativeSortArray(int[] arr1, int[] arr2) {
+        int arr2Length = arr2.length;
+        int arr1length = arr1.length;
+        List<Integer> notContain = new ArrayList<>();
+        Map<Integer,List<Integer>> map = new HashMap<>(arr2Length);
+        Map<Integer,Integer> indexMap = new HashMap<>(arr2Length);
+        for (int i = 0; i < arr2Length; i++) {
+            indexMap.put(arr2[i],i);
+        }
+        for(int i : arr1){
+            Integer index = indexMap.get(i);
+            if(index == null){
+                notContain.add(i);
+            }else {
+                List<Integer> list = map.computeIfAbsent(index,ArrayList::new);
+                list.add(i);
+            }
+        }
+        List<Integer> result = new ArrayList<>(arr1length);
+        for (int i = 0; i < arr2Length ; i++) {
+            result.addAll(map.get(i));
+        }
+        Collections.sort(notContain);
+        result.addAll(notContain);
+        for (int i = 0; i < arr1length; i++) {
+            arr1[i] = result.get(i);
+        }
+        return arr1;
     }
 
     /**
