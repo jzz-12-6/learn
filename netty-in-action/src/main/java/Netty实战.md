@@ -616,3 +616,92 @@ netty所提供的传输
 | OP_READ    | 请求当数据已经就绪，可以从 Channel 中读取时获得通知          |
 | OP_WRITE   | 请求当可以向 Channel 中写更多的数据时获得通知。这处理了套接字缓冲区被完全填满时的情况，这种情况通常发生在数据的发送速度比远程节点可处理的速度更快的时候 |
 
+### 4.3.2 Epoll—用于 Linux 的本地非阻塞传输
+
+Netty为Linux提供了一组NIO API，其以一种和它本身的设计更加一致的方式使用epoll，并且以一种更加轻量的方式使用中断。
+
+### 4.3.3 OIO—旧的阻塞 I/O
+
+ 	Netty利用了SO_TIMEOUT这个Socket标志，它指定了等待一个I/O操作完成的最大毫秒数。如果操作在指定的时间间隔内没有完成，则将会抛出一个SocketTimeout Exception。Netty将捕获这个异常并继续处理循环。在EventLoop下一次运行时，它将再次尝试。这实际上也是类似于Netty这样的异步框架能够支持OIO的唯一方式（问题：当一个 SocketTimeoutException 被抛出时填充栈跟踪所需要的时间，其对于性能来说代价很大）
+
+### 4.3.4 用于 JVM 内部通信的 Local 传输
+
+​	Netty 提供了一个 Local 传输，用于在同一个 JVM 中运行的客户端和服务器程序之间的异步通信。同样，这个传输也支持对于所有 Netty 传输实现都共同的 API。在这个传输中，和服务器 Channel 相关联的 SocketAddress 并没有绑定物理网络地址；相反，只要服务器还在运行，它就会被存储在注册表里，并在 Channel 关闭时注销。因为这个传输并不接受真正的网络流量，所以它并不能够和其他传输实现进行互操作。客户端希望连接到（在同一个 JVM 中）使用了这个传输的服务器端时也必须使用它。
+
+### 4.3.5 Embedded 传输
+
+​	Embedded 传输的关键是一个被称为 EmbeddedChannel 的具体的 Channel实现。使得你可以将一组 ChannelHandler 作为帮助器类嵌入到其他的 ChannelHandler 内部。通过这种方式，你将可以扩展一个 ChannelHandler 的功能，而又不需要修改其内部代码。
+
+## 第 5 章 ByteBuf
+
+​	网络数据的基本单位总是字节。Java NIO 提供了 ByteBuffer 作为它的字节容器，Netty提供了ByteBuf
+
+## 5.1 ByteBuf 的 API
+
+​	Netty 的数据处理 API 通过两个组件暴露——abstract class ByteBuf 和 interface ByteBufHolder。
+
+​	优点：
+
+ 	1. 可以被用户自定义的缓冲区类型扩展
+ 	2. 通过内置的复合缓冲区类型实现了透明的零拷贝
+ 	3. 容量可以按需增长（类似StringBuilder）
+ 	4. 在读和写这两种模式之间切换不需要调用ByteBuffer 的 flip()方法
+ 	5. 读和写使用了不同的索引；
+ 	6. 支持方法的链式调用；
+ 	7. 支持引用计数
+ 	8. 支持池化。
+
+## 5.2 ByteBuf 类——Netty 的数据容器
+
+​	ByteBuf 维护了两个不同的索引：一个用于读取，一个用于写入，读取时readerIndex将会被递增已经被读取的字节数，写入时，writerIndex 也会被递增。如果readerIndex=writerIndex，抛出异常IndexOutOfBoundsException。名称以read 或者 write 开头的 ByteBuf 方法，将会推进其对应的索引，以 set 或者 get 开头的操作则不会
+
+### 5.2.2 ByteBuf 的使用模式
+
+​	1.堆缓冲区
+
+​	最常用的 ByteBuf 模式是将数据存储在 JVM 的堆空间中,称为支撑数组，能在没有使用池化的情况下提供快速的分配和释放
+
+```java
+ public static void heapBuffer() {
+        ByteBuf heapBuf = Unpooled.buffer(1024); 
+        //检查 ByteBuf 是否有一个支撑数组
+     	//如果为false访问数组，抛出异常UnsupportedOperationException。
+        if (heapBuf.hasArray()) {
+            //如果有，则获取对该数组的引用
+            byte[] array = heapBuf.array();
+            //计算第一个字节的偏移量
+            int offset = heapBuf.arrayOffset() + heapBuf.readerIndex();
+            //获得可读字节数
+            int length = heapBuf.readableBytes();
+            //使用数组、偏移量和长度作为参数调用你的方法
+            handleArray(array, offset, length);
+        }
+    }
+```
+
+​	2.直接缓冲区
+
+​	ByteBuffer 类允许 JVM 实现通过本地调用来分配内存。这主要是为了避免在每次调用本地 I/O 操作之前（或者之后）将缓冲区的内容复制到一个中间缓冲区（或者从中间缓冲区把内容复制到缓冲区）直接缓冲区的内容将驻留在常规的会被垃圾回收的堆之外。缺点是相对于基于堆的缓冲区，它们的分配和释放都较为昂贵。
+
+```java
+ private static final ByteBuf BYTE_BUF_FROM_SOMEWHERE = Unpooled.buffer(1024);
+public static void directBuffer() {
+        ByteBuf directBuf = BYTE_BUF_FROM_SOMEWHERE;
+        //检查 ByteBuf 是否由数组支撑。如果不是，则这是一个直接缓冲区
+        if (!directBuf.hasArray()) {
+            //获取可读字节数
+            int length = directBuf.readableBytes();
+            //分配一个新的数组来保存具有该长度的字节数据
+            byte[] array = new byte[length];
+            //将字节复制到该数组
+            directBuf.getBytes(directBuf.readerIndex(), array);
+            //使用数组、偏移量和长度作为参数调用你的方法
+            handleArray(array, 0, length);
+        }
+}
+
+```
+
+​	3 复合缓冲区
+
+​	Netty 通过一个 ByteBuf 子类——CompositeByteBuf——实现为多个 ByteBuf 提供一个聚合视图。在这里你可以根据需要添加或者删除 ByteBuf 实例。
