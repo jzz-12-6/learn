@@ -4,13 +4,12 @@ import io.netty.buffer.*;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.util.ByteProcessor;
+
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.Iterator;
 import java.util.Random;
-
-import static io.netty.channel.DummyChannelHandlerContext.DUMMY_INSTANCE;
 
 /**
  * Created by kerr.
@@ -51,7 +50,7 @@ public class ByteBufExamples {
     private final static Random random = new Random();
     private static final ByteBuf BYTE_BUF_FROM_SOMEWHERE = Unpooled.buffer(1024);
     private static final Channel CHANNEL_FROM_SOMEWHERE = new NioSocketChannel();
-    private static final ChannelHandlerContext CHANNEL_HANDLER_CONTEXT_FROM_SOMEWHERE = DUMMY_INSTANCE;
+    private static final ChannelHandlerContext CHANNEL_HANDLER_CONTEXT_FROM_SOMEWHERE = null;
     /**
      * 代码清单 5-1 支撑数组
      */
@@ -92,6 +91,16 @@ public class ByteBufExamples {
     /**
      * 代码清单 5-3 使用 ByteBuffer 的复合缓冲区模式
      */
+    /**
+     * 头部和主体——组成的将通过 HTTP 协议
+     * 传输的消息。这两部分由应用程序的不同模块产生，将会在消息被发送的时候组装。该应用程序
+     * 可以选择为多个消息重用相同的消息主体。当这种情况发生时，对于每个消息都将会创建一个新
+     * 的头部
+     * 创建了一个包含两个 ByteBuffer 的数组用来保存这些消息组件，同时创建了第三个 ByteBuffer 用来保存所
+     * 有这些数据的副本
+     * @param header
+     * @param body
+     */
     public static void byteBufferComposite(ByteBuffer header, ByteBuffer body) {
         // Use an array to hold the message parts
         ByteBuffer[] message =  new ByteBuffer[]{ header, body };
@@ -108,19 +117,33 @@ public class ByteBufExamples {
     /**
      * 代码清单 5-4 使用 CompositeByteBuf 的复合缓冲区模式
      */
+    /**
+     * 不想为每个消息都重新分配这两个缓冲区，所以使用 CompositeByteBuf 是一个完美的选择。
+     */
     public static void byteBufComposite() {
         CompositeByteBuf messageBuf = Unpooled.compositeBuffer();
-        ByteBuf headerBuf = BYTE_BUF_FROM_SOMEWHERE; // can be backing or direct
-        ByteBuf bodyBuf = BYTE_BUF_FROM_SOMEWHERE;   // can be backing or direct
+        ByteBuf headerBuf = BYTE_BUF_FROM_SOMEWHERE;
+        ByteBuf bodyBuf = BYTE_BUF_FROM_SOMEWHERE;
         //将 ByteBuf 实例追加到 CompositeByteBuf
         messageBuf.addComponents(headerBuf, bodyBuf);
         //...
         //删除位于索引位置为 0（第一个组件）的 ByteBuf
         messageBuf.removeComponent(0); // remove the header
         //循环遍历所有的 ByteBuf 实例
-        for (ByteBuf buf : messageBuf) {
-            System.out.println(buf.toString());
+        Iterator<ByteBuf> iterator = messageBuf.iterator();
+        while (iterator.hasNext()){
+            ByteBuf byteBuf = iterator.next();
+            System.out.println(byteBuf.toString());
         }
+        //CompositeByteBuf 可能不支持访问其支撑数组，因此访问 CompositeByteBuf 中的数据类似于（访问）直接缓冲区的模式
+        //获得可读字节数
+        int length = messageBuf.readableBytes();
+        //分配一个具有可读字节数长度的新数组
+        byte[] array = new byte[length];
+        //将字节读到该数组中
+        messageBuf.getBytes(messageBuf.readerIndex(), array);
+        //使用偏移量和长度作为参数使用该数组
+        handleArray(array, 0, array.length);
     }
 
     /**
@@ -139,14 +162,19 @@ public class ByteBufExamples {
     }
 
     /**
-     * 代码清单 5-6 访问数据
+     * ByteBuf 的索引是从零开始的：
+     * 第一个字节的索引是0，最后一个字节的索引总是 capacity() - 1
      */
     public static void byteBufRelativeAccess() {
-        ByteBuf buffer = BYTE_BUF_FROM_SOMEWHERE; //get reference form somewhere
+        ByteBuf buffer = BYTE_BUF_FROM_SOMEWHERE;
+        //不会改变索引位置
         for (int i = 0; i < buffer.capacity(); i++) {
             byte b = buffer.getByte(i);
             System.out.println((char) b);
         }
+        //可以改变索引位置
+        buffer.readerIndex(2);
+        buffer.writerIndex(1);
     }
 
     /**
@@ -176,8 +204,11 @@ public class ByteBufExamples {
      * use {@link ByteBufProcessor in Netty 4.0.x}
      */
     public static void byteProcessor() {
-        ByteBuf buffer = BYTE_BUF_FROM_SOMEWHERE; //get reference form somewhere
-        int index = buffer.forEachByte(ByteProcessor.FIND_CR);
+        ByteBuf buffer = BYTE_BUF_FROM_SOMEWHERE;
+        buffer.duplicate();
+        //查找空格
+        buffer.indexOf(0,buffer.readerIndex(),Byte.decode("/r"));
+        int index = buffer.forEachByte(ByteBufProcessor.FIND_CR);
     }
 
     /**

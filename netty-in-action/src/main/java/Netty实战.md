@@ -705,3 +705,243 @@ public static void directBuffer() {
 ​	3 复合缓冲区
 
 ​	Netty 通过一个 ByteBuf 子类——CompositeByteBuf——实现为多个 ByteBuf 提供一个聚合视图。在这里你可以根据需要添加或者删除 ByteBuf 实例。
+
+```java
+/**
+     * 头部和主体——组成的将通过 HTTP 协议
+     * 传输的消息。这两部分由应用程序的不同模块产生，将会在消息被发送的时候组装。该应用程序
+     * 可以选择为多个消息重用相同的消息主体。当这种情况发生时，对于每个消息都将会创建一个新
+     * 的头部
+     * 创建了一个包含两个 ByteBuffer 的数组用来保存这些消息组件，同时创建了第三个 ByteBuffer 用来保存所
+     * 有这些数据的副本
+     * @param header
+     * @param body
+     */
+    public static void byteBufferComposite(ByteBuffer header, ByteBuffer body) {
+        // Use an array to hold the message parts
+        ByteBuffer[] message =  new ByteBuffer[]{ header, body };
+
+        // Create a new ByteBuffer and use copy to merge the header and body
+        ByteBuffer message2 =
+                ByteBuffer.allocate(header.remaining() + body.remaining());
+        message2.put(header);
+        message2.put(body);
+        message2.flip();
+    }
+```
+
+使用了 CompositeByteBuf
+
+```java
+ /**
+     * 不想为每个消息都重新分配这两个缓冲区，所以使用 CompositeByteBuf 是一个完美的选择。
+     */
+    public static void byteBufComposite() {
+        CompositeByteBuf messageBuf = Unpooled.compositeBuffer();
+        ByteBuf headerBuf = BYTE_BUF_FROM_SOMEWHERE;
+        ByteBuf bodyBuf = BYTE_BUF_FROM_SOMEWHERE;
+        //将 ByteBuf 实例追加到 CompositeByteBuf
+        messageBuf.addComponents(headerBuf, bodyBuf);
+        //...
+        //删除位于索引位置为 0（第一个组件）的 ByteBuf
+        messageBuf.removeComponent(0); // remove the header
+        //循环遍历所有的 ByteBuf 实例
+        Iterator<ByteBuf> iterator = messageBuf.iterator();
+        while (iterator.hasNext()){
+            ByteBuf byteBuf = iterator.next();
+            System.out.println(byteBuf.toString());
+        }
+        //CompositeByteBuf 可能不支持访问其支撑数组，因此访问 CompositeByteBuf 中的数据类似于（访问）直接缓冲区的模式
+        //获得可读字节数
+        int length = messageBuf.readableBytes();
+        //分配一个具有可读字节数长度的新数组
+        byte[] array = new byte[length];
+        //将字节读到该数组中
+        messageBuf.getBytes(messageBuf.readerIndex(), array);
+        //使用偏移量和长度作为参数使用该数组
+        handleArray(array, 0, array.length);
+    }
+
+
+```
+
+## 5.3 字节级操作
+
+### 5.3.1 随机访问索引
+
+```java
+ /**
+     * ByteBuf 的索引是从零开始的：
+     * 第一个字节的索引是0，最后一个字节的索引总是 capacity() - 1
+     */
+    public static void byteBufRelativeAccess() {
+        ByteBuf buffer = BYTE_BUF_FROM_SOMEWHERE;
+        //不会改变索引位置
+        for (int i = 0; i < buffer.capacity(); i++) {
+            byte b = buffer.getByte(i);
+            System.out.println((char) b);
+        }
+        //可以改变索引位置
+        buffer.readerIndex(2);
+        buffer.writerIndex(1);
+    }
+
+
+```
+
+### 5.3.2 顺序访问索引
+
+​	虽然 ByteBuf 同时具有读索引和写索引，但是 JDK 的 ByteBuffer 却只有一个索引，这也就是为什么必须调用 flip()方法来在读模式和写模式之间进行切换的原因。
+
+### 5.3.3 可丢弃字节
+
+​	可丢弃字节的分段包含了已经被读过的字节，调用discardReadBytes()方法，可以丢弃它们并回收空间。这个分段的初始大小为 0，存储在 readerIndex 中，会随着 read 操作的执行而增加。这将极有可能会导致内存复制，因为可读字节（图中标记为 CONTENT 的部分）必须被移动到缓冲区的开始位置。
+
+### 5.3.4 可读字节
+
+​	ByteBuf 的可读字节分段存储了实际数据。新分配的、包装的或者复制的缓冲区的默认的readerIndex 值为 0。任何名称以 read 或者 skip 开头的操作都将检索或者跳过位于当前readerIndex 的数据，并且将它增加已读字节数。果被调用的方法需要一个 ByteBuf 参数作为写入的目标，并且没有指定目标索引参数，那么该目标缓冲区的 writerIndex 也将被增加
+
+```java
+public static void readAllData() {
+        ByteBuf buffer = BYTE_BUF_FROM_SOMEWHERE; //get reference form somewhere
+        while (buffer.isReadable()) {
+            System.out.println(buffer.readByte());
+        }
+}
+```
+
+### 5.3.5 可写字节
+
+​	可写字节分段是指一个拥有未定义内容的、写入就绪的内存区域。新分配的缓冲区的writerIndex 的默认值为 0。任何名称以 write 开头的操作都将从当前的 writerIndex 处开始写数据，并将它增加已经写入的字节数。如果写操作的目标也是 ByteBuf，并且没有指定源索引的值，则源缓冲区的 readerIndex 也同样会被增加相同的大小。
+
+```java
+    public static void write() {
+        ByteBuf buffer = BYTE_BUF_FROM_SOMEWHERE; 
+        while (buffer.writableBytes() >= 4) {
+            buffer.writeInt(random.nextInt());
+        }
+    }
+
+```
+
+### 5.3.6 索引管理
+
+​	JDK 的 InputStream 定义了 mark(int readlimit)和 reset()方法，这些方法分别被用来将流中的当前位置标记为指定的值，以及将流重置到该位置
+
+​	可以通过调用 markReaderIndex()、markWriterIndex()、resetWriterIndex()和 resetReaderIndex()来标记和重置 ByteBuf 的 readerIndex 和 writerIndex。可以通过调用 clear()方法来将 readerIndex 和 writerIndex 都设置为0
+
+### 5.3.7 查找操作
+
+ ```java
+public static void byteProcessor() {
+        ByteBuf buffer = BYTE_BUF_FROM_SOMEWHERE;
+        //查找空格
+        buffer.indexOf(0,buffer.readerIndex(),Byte.decode("/r"));
+        int index = buffer.forEachByte(ByteBufProcessor.FIND_CR);
+}
+ ```
+
+### 5.3.8 派生缓冲区
+
+​	派生缓冲区为 ByteBuf 提供了以专门的方式来呈现其内容的视图。这类视图是通过以下方法被创建的：duplicate()，slice()，slice(int, int)，Unpooled.unmodifiableBuffer(…)，order(ByteOrder)，readSlice(int)每个这些方法都将返回一个新的 ByteBuf 实例，它具有自己的读索引、写索引和标记索引。如果修改了内容，也会同时修改对应的源实例。
+
+​	使用copy()或者 copy(int, int)方法，会拥有独立的数据副本。
+
+```java
+	/**
+     * 代码清单 5-10 对 ByteBuf 进行切片
+     */
+    public static void byteBufSlice() {
+        Charset utf8 = Charset.forName("UTF-8");
+        //创建一个用于保存给定字符串的字节的 ByteBuf
+        ByteBuf buf = Unpooled.copiedBuffer("Netty in Action rocks!", utf8);
+        //创建该 ByteBuf 从索引 0 开始到索引 15 结束的一个新切片
+        ByteBuf sliced = buf.slice(0, 15);
+        //将打印“Netty in Action”
+        System.out.println(sliced.toString(utf8));
+        //更新索引 0 处的字节
+        buf.setByte(0, (byte)'J');
+        //将会成功，因为数据是共享的，对其中一个所做的更改对另外一个也是可见的
+        assert buf.getByte(0) == sliced.getByte(0);
+    }
+
+    /**
+     * 代码清单 5-11 复制一个 ByteBuf
+     */
+    public static void byteBufCopy() {
+        Charset utf8 = Charset.forName("UTF-8");
+        //创建 ByteBuf 以保存所提供的字符串的字节
+        ByteBuf buf = Unpooled.copiedBuffer("Netty in Action rocks!", utf8);
+        //创建该 ByteBuf 从索引 0 开始到索引 15 结束的分段的副本
+        ByteBuf copy = buf.copy(0, 15);
+        //将打印“Netty in Action”
+        System.out.println(copy.toString(utf8));
+        //更新索引 0 处的字节
+        buf.setByte(0, (byte)'J');
+        //将会成功，因为数据不是共享的
+        assert buf.getByte(0) != copy.getByte(0);
+    }
+```
+
+### 5.3.9 读/写操作
+
+​	get()和set()操作，从给定索引开始，并且保持索引不变
+
+​	read()和wtite()操作，从给定的索引开始，并且会根据已经访问过的字节数对索引进行调整
+
+```java
+ public static void byteBufSetGet() {
+        Charset utf8 = Charset.forName("UTF-8");
+        //创建一个新的 ByteBuf以保存给定字符串的字节
+        ByteBuf buf = Unpooled.copiedBuffer("Netty in Action rocks!", utf8);
+        //打印第一个字符'N'
+        System.out.println((char)buf.getByte(0));
+        //存储当前的 readerIndex 和 writerIndex
+        int readerIndex = buf.readerIndex();
+        int writerIndex = buf.writerIndex();
+        //将索引 0 处的字 节更新为字符'B'
+        buf.setByte(0, (byte)'B');
+        //打印第一个字符，现在是'B'
+        System.out.println((char)buf.getByte(0));
+        //将会成功，因为这些操作并不会修改相应的索引
+        assert readerIndex == buf.readerIndex();
+        assert writerIndex == buf.writerIndex();
+    }
+ /**
+     * 代码清单 5-13 ByteBuf 上的 read()和 write()操作
+     */
+    public static void byteBufWriteRead() {
+        Charset utf8 = Charset.forName("UTF-8");
+        //创建一个新的 ByteBuf 以保存给定字符串的字节
+        ByteBuf buf = Unpooled.copiedBuffer("Netty in Action rocks!", utf8);
+        //打印第一个字符'N'
+        System.out.println((char)buf.readByte());
+        //存储当前的readerIndex
+        int readerIndex = buf.readerIndex();
+        //存储当前的writerIndex
+        int writerIndex = buf.writerIndex();
+        //将字符 '?'追加到缓冲区
+        buf.writeByte((byte)'?');
+        assert readerIndex == buf.readerIndex();
+        //将会成功，因为 writeByte()方法移动了 writerIndex
+        assert writerIndex != buf.writerIndex();
+    }
+```
+
+### 5.3.10 更多操作
+
+| 名称            | 描述                                                         |
+| --------------- | ------------------------------------------------------------ |
+| isReadable()    | 如果至少有一个字节可供读取，则返回 true                      |
+| isWritable()    | 如果至少有一个字节可被写入，则返回 true                      |
+| readableBytes() | 返回可被读取的字节数                                         |
+| writableBytes() | 返回可被写入的字节数                                         |
+| capacity()      | 返回 ByteBuf 可容纳的字节数。在此之后，它会尝试再次扩展直到达到 maxCapacity() |
+| maxCapacity()   | 返回 ByteBuf 可以容纳的最大字节数                            |
+| hasArray()      | 如果 ByteBuf 由一个字节数组支撑，则返回 true                 |
+| array()         | 如果 ByteBuf 由一个字节数组支撑则返回该数组；否则，它将抛出一个UnsupportedOperationException 异常 |
+
+## 5.5 ByteBuf 分配
+
+### 5.5.1 按需分配：ByteBufAllocator 接口
+
