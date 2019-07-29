@@ -13,31 +13,69 @@ public class ArraysProgram {
 
 
     public static void main(String[] args) {
-        containsNearbyDuplicate(new int[]{1,0,1,1},1);
+        sumEvenAfterQueries(new int[]{1,2,3,4},new int[][]{{1,0},{-3,1},{-4,0},{2,3}}) ;
     }
 
-    public static boolean containsNearbyDuplicate(int[] nums, int k) {
-        int length = nums.length;
-        List<List<Integer>> lists = new ArrayList<>();
-        Map<Integer,Map<Integer,Integer>> map = new HashMap<>(length);
-        for (int i = 0; i < length; i++) {
-            int num = nums[i];
-            Integer j = map.get(num);
-            if(j == null){
-                map.put(num,i);
-            }else if (i - j == k){
-                return true;
+    /**
+     * 985. 查询后的偶数和
+     * 给出一个整数数组 A 和一个查询数组 queries。
+     * 对于第 i 次查询，有 val = queries[i][0], index = queries[i][1]，我们会把 val 加到 A[index] 上。然后，第 i 次查询的答案是 A 中偶数值的和。
+     *（此处给定的 index = queries[i][1] 是从 0 开始的索引，每次查询都会永久修改数组 A。）
+     * 返回所有查询的答案。你的答案应当以数组 answer 给出，answer[i] 为第 i 次查询的答案。
+     *
+     * 输入：A = [1,2,3,4], queries = [[1,0],[-3,1],[-4,0],[2,3]]
+     * 输出：[8,6,2,4]
+     * 解释：
+     * 开始时，数组为 [1,2,3,4]。
+     * 将 1 加到 A[0] 上之后，数组为 [2,2,3,4]，偶数值之和为 2 + 2 + 4 = 8。
+     * 将 -3 加到 A[1] 上之后，数组为 [2,-1,3,4]，偶数值之和为 2 + 4 = 6。
+     * 将 -4 加到 A[0] 上之后，数组为 [-2,-1,3,4]，偶数值之和为 -2 + 4 = 2。
+     * 将 2 加到 A[3] 上之后，数组为 [-2,-1,3,6]，偶数值之和为 -2 + 6 = 4。
+     *
+     * @param A 整数数组 A
+     * @param queries 查询数组
+     * @return int[]
+     */
+    public static int[] sumEvenAfterQueries(int[] A, int[][] queries) {
+        int total = Arrays.stream(A).filter(i-> i % 2 == 0).sum();
+        int QLength = queries.length;
+        int[] result = new int[QLength];
+        for (int i = 0;i<QLength;i++){
+            int value = queries[i][0];
+            int index = queries[i][1];
+            if (A[index] % 2 == 0){
+                total -= A[index];
             }
+            A[index] += value;
+            if (A[index] % 2 == 0){
+                total += A[index];
+            }
+            result[i] = total;
         }
-        Collection<Map<Integer, Integer>> values = map.values();
-        values.forEach(m->{
-            if(m.size()>1){
-                Set<Integer> integers = m.keySet();
-
-            }
-        });
-        return false;
+        return result;
     }
+//    public static boolean containsNearbyDuplicate(int[] nums, int k) {
+//        int length = nums.length;
+//        List<List<Integer>> lists = new ArrayList<>();
+//        Map<Integer,Map<Integer,Integer>> map = new HashMap<>(length);
+//        for (int i = 0; i < length; i++) {
+//            int num = nums[i];
+//            Integer j = map.get(num);
+//            if(j == null){
+//                map.put(num,i);
+//            }else if (i - j == k){
+//                return true;
+//            }
+//        }
+//        Collection<Map<Integer, Integer>> values = map.values();
+//        values.forEach(m->{
+//            if(m.size()>1){
+//                Set<Integer> integers = m.keySet();
+//
+//            }
+//        });
+//        return false;
+//    }
     /**
      * 448. 找到所有数组中消失的数字
      * 给定一个范围在  1 ≤ a[i] ≤ n ( n = 数组大小 ) 的 整型数组，数组中的元素一些出现了两次，另一些只出现一次。

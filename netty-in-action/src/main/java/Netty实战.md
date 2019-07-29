@@ -945,3 +945,262 @@ public static void byteProcessor() {
 
 ### 5.5.1 按需分配：ByteBufAllocator 接口
 
+​	为了降低分配和释放内存的开销，Netty 通过 interface ByteBufAllocator 实现了（ByteBuf 的）池化，它可以用来分配我们所描述过的任意类型的 ByteBuf 实例
+
+| ByteBufAllocator方法                                         | 描述                                                         |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| buffer()
+buffer(int initialCapacity);
+buffer(int initialCapacity, int maxCapacity); | 返回一个基于堆或者直接内存存储的 ByteBuf                     |
+| heapBuffer()
+heapBuffer(int initialCapacity)
+heapBuffer(int initialCapacity, int maxCapacity) | 返回一个基于堆内存存储的ByteBuf                              |
+| directBuffer()
+directBuffer(int initialCapacity)
+directBuffer(int initialCapacity, int maxCapacity) | 返回一个基于直接内存存储的ByteBuf                            |
+| compositeBuffer()
+compositeBuffer(int maxNumComponents)
+compositeDirectBuffer()
+compositeDirectBuffer(int maxNumComponents);
+compositeHeapBuffer()
+compositeHeapBuffer(int maxNumComponents); | 返回一个可以通过添加最大到指定数目的基于堆的或者直接内存存储的缓冲区来扩展的CompositeByteBuf |
+| ioBuffer()                                                   | 返回一个用于套接字的 I/O 操作的 ByteBuf                      |
+
+获取ByteBufAllocator引用
+
+```java
+    /**
+     * 代码清单 5-14 获取一个到 ByteBufAllocator 的引用
+     */
+    public static void obtainingByteBufAllocatorReference(){
+        Channel channel = CHANNEL_FROM_SOMEWHERE;
+        //从 Channel 获取一个到ByteBufAllocator 的引用
+        ByteBufAllocator allocator = channel.alloc();
+        //...
+        ChannelHandlerContext ctx = CHANNEL_HANDLER_CONTEXT_FROM_SOMEWHERE;
+        //从 ChannelHandlerContext 获取一个到 ByteBufAllocator 的引用
+        ByteBufAllocator allocator2 = ctx.alloc();
+        //...
+    }
+```
+
+Netty提供了两种ByteBufAllocator的实现：PooledByteBufAllocator和UnpooledByteBufAllocator。前者池化了ByteBuf的实例以提高性能并最大限度地减少内存碎片。后者的实现不池化ByteBuf实例，并且在每次它被调用时都会返回一个新的实例。
+
+### 5.5.2 Unpooled 缓冲区
+
+| Unpooled 的方法                                              | 描述                                       |
+| ------------------------------------------------------------ | ------------------------------------------ |
+| buffer()
+buffer(int initialCapacity)
+buffer(int initialCapacity, int maxCapacity) | 返回一个未池化的基于堆内存存储的ByteBuf    |
+| directBuffer()
+directBuffer(int initialCapacity)
+directBuffer(int initialCapacity, int maxCapacity) | 返回一个未池化的基于直接内存存储的 ByteBuf |
+| wrappedBuffer()                                              | 返回一个包装了给定数据的 ByteBuf           |
+| copiedBuffer()                                               | 返回一个复制了给定数据的 ByteBuf           |
+
+### 5.5.3 ByteBufUtil类
+
+ByteBufUtil 提供了用于操作 ByteBuf 的静态的辅助方法。
+
+| 方法                     | 描述                                   |
+| ------------------------ | -------------------------------------- |
+| hexdump()                | 以十六进制的表示形式打印ByteBuf 的内容 |
+| equals(ByteBuf, ByteBuf) | 判断两个 ByteBuf实例的相等性           |
+
+## 5.6 引用计数
+
+​	引用计数是一种通过在某个对象所持有的资源不再被其他对象引用时释放该对象所持有的资源来优化内存使用和性能的技术。ByteBuf 和 ByteBufHolder 引入了引用计数技术，它们都实现了 interface ReferenceCounted。
+
+​	跟踪到某个特定对象的活动引用的数量。一个 ReferenceCounted 实现的实例将通常以活动的引用计数为 1 作为开始。只要引用计数大于 0，就能保证对象不会被释放。当活动引用的数量减少到 0 时，该实例就会被释放。试图访问一个已经被释放的引用计数的对象，将会抛出异常IllegalReferenceCountException
+
+​	引用计数对于池化实现（如 PooledByteBufAllocator）来说是至关重要的，降低了内存分配的开销。
+
+```java
+    /**
+     * 代码清单 5-15 引用计数
+     * */
+    public static void referenceCounting(){
+        Channel channel = CHANNEL_FROM_SOMEWHERE;
+        //从 Channel 获取ByteBufAllocator
+        ByteBufAllocator allocator = channel.alloc();
+        //...
+        //从 ByteBufAllocator分配一个 ByteBuf
+        ByteBuf buffer = allocator.directBuffer();
+        //检查引用计数是否为预期的 1
+        assert buffer.refCnt() == 1;
+        //...
+    }
+
+    /**
+     * 代码清单 5-16 释放引用计数的对象
+     */
+    public static void releaseReferenceCountedObject(){
+        ByteBuf buffer = BYTE_BUF_FROM_SOMEWHERE;
+        //减少到该对象的活动引用。当减少到 0 时，该对象被释放，并且该方法返回 true
+        boolean released = buffer.release();
+        //...
+    }
+
+
+```
+
+
+
+# 第 6 章 ChannelHandler和ChannelPipeline
+
+## 6.1 ChannelHandler 家族
+
+### 6.1.1 Channel 的生命周期
+
+ChannelRegistered--->ChannelActive--->ChannelInactive--->ChannelUnregistered
+
+| Channel 的生命周期状态 | 描述                                                         |
+| ---------------------- | ------------------------------------------------------------ |
+| ChannelUnregistered    | Channel 已经被创建，但还未注册到 EventLoop                   |
+| ChannelRegistered      | Channel 已经被注册到了 EventLoop                             |
+| ChannelActive          | Channel 处于活动状态（已经连接到它的远程节点）。它现在可以接收和发送数据了 |
+| ChannelInactive        | Channel 没有连接到远程节点                                   |
+
+### 6.1.2 ChannelHandler 的生命周期
+
+| ChannelHandler 的生命周期方法 | 描 述                                                 |
+| ----------------------------- | ----------------------------------------------------- |
+| handlerAdded                  | 当把 ChannelHandler 添加到 ChannelPipeline 中时被调用 |
+| handlerRemoved                | 当从 ChannelPipeline 中移除ChannelHandler 时被调用    |
+| exceptionCaught               | 当处理过程中在 ChannelPipeline 中有错误产生时被调用   |
+
+### 6.1.3 ChannelInboundHandler 接口 (5.0之后合并至ChannelHandler )
+
+| ChannelInboundHandler 的方法 | 描述                                                         |
+| ---------------------------- | ------------------------------------------------------------ |
+| channelRegistered            | 当 Channel 已经注册到它的 EventLoop 并且能够处理 I/O 时被调用 |
+| channelUnregistered          | 当 Channel 从它的 EventLoop 注销并且无法处理任何 I/O 时被调用 |
+| channelActive                | 当 Channel 处于活动状态时被调用；Channel 已经连接/绑定并且已经就绪 |
+| channelInactive              | 当 Channel 离开活动状态并且不再连接它的远程节点时被调用      |
+| channelReadComplete          | 当Channel上的一个读操作完成时被调用（会被多次调用）          |
+| channelRead                  | 当从 Channel 读取数据时被调用                                |
+| ChannelWritabilityChanged    | 当 Channel 的可写状态发生改变时被调用。用户可以确保写操作不会完成得太快（以避免发生 OutOfMemoryError）或者可以在 Channel 变为再次可写时恢复写入。可以通过调用 Channel 的 isWritable()方法来检测Channel 的可写性。与可写性相关的阈值可以通过 Channel.config().setWriteHighWaterMark()Channel.config().setWriteLowWaterMark()方法来设置 |
+| userEventTriggered           | 当 ChannelnboundHandler.fireUserEventTriggered()方法被调用时被调用，因为一个 POJO 被传经了 ChannelPipeline |
+
+当某个ChannelHandler的实现重写channelRead()方法时，它将负责显式地释放与池化的 ByteBuf 实例相关的内存。
+
+```java
+/**
+ * 代码清单 6-1 释放消息资源
+ * 扩展了 ChannelInboundHandlerAdapter
+ */
+//标示一个Channel-Handler 可以被多个Channel安全地共享
+@Sharable
+public class DiscardHandler extends ChannelHandlerAdapter {
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        //丢弃已接收的消息
+        ReferenceCountUtil.release(msg);
+    }
+
+}
+```
+
+使用SimpleChannelInboundHandler可以自动释放资源
+
+```java
+/**
+ * 代码清单 6-2 使用 SimpleChannelInboundHandler
+ *
+ */
+@Sharable
+public class SimpleDiscardHandler extends SimpleChannelInboundHandler<Object> {
+
+    @Override
+    protected void messageReceived(ChannelHandlerContext ctx, Object msg) throws Exception {
+        //不需要任何显式的资源释放
+    }
+    
+}
+```
+
+### 6.1.4 ChannelOutboundHandler 接口(5.0之后合并至ChannelHandler )
+
+出站操作和数据将由 ChannelOutboundHandler 处理。它的方法将被 Channel、ChannelPipeline 以及 ChannelHandlerContext 调用.是可以按需推迟操作或者事件，这使得可以通过一些复杂的方法来处理请求。例如，如果到远程节点的写入被暂停了，那么你可以推迟冲刷操作并在稍后继续.
+
+| ChannelOutboundHandler 的方法                                | 描述                                                |
+| ------------------------------------------------------------ | --------------------------------------------------- |
+| bind(ChannelHandlerContext,SocketAddress,ChannelPromise)     | 当请求将 Channel 绑定到本地地址时被调用             |
+| connect(ChannelHandlerContext,SocketAddress,SocketAddress,ChannelPromise) | 当请求将 Channel 连接到远程节点时被调用             |
+| disconnect(ChannelHandlerContext,ChannelPromise)             | 当请求将 Channel 从远程节点断开时被调用             |
+| close(ChannelHandlerContext,ChannelPromise)                  | 当请求关闭 Channel 时被调用                         |
+| deregister(ChannelHandlerContext,ChannelPromise)             | 当请求将 Channel 从它的 EventLoop 注销时被调用      |
+| read(ChannelHandlerContext)                                  | 当请求从 Channel 读取更多的数据时被调用             |
+| flush(ChannelHandlerContext)                                 | 当请求通过 Channel 将入队数据冲刷到远程节点时被调用 |
+| write(ChannelHandlerContext,Object,ChannelPromise)           | 当请求通过 Channel 将数据写到远程节点时被调用       |
+
+ChannelPromise是ChannelFuture的一个子类，其定义了一些可写的方法，如setSuccess()和setFailure()，从而使ChannelFuture不可变 。
+
+### 6.1.5 ChannelHandler 适配器
+
+```java
+class ChannelHandlerAdapter implements ChannelHandler
+```
+
+提供了isSharable()。判断对应的实现被标注为Sharable，如果为true，表示它可以被添加到多个 ChannelPipeline
+
+### 6.1.6 资源管理
+
+​	每当通过调用 ChannelInboundHandler.channelRead()或者 ChannelOutboundHandler.write()方法来处理数据时，你都需要确保没有任何的资源泄漏。
+
+​	Netty提供了class ResourceLeakDetector级 别，它将对你应用程序的缓冲区分配做大约 1%的采样来检测内存泄露。
+
+| 泄漏检测级别 | 描述                                                         |
+| ------------ | ------------------------------------------------------------ |
+| DISABLED     | 禁用泄漏检测。只有在详尽的测试之后才应设置为这个值           |
+| SIMPLE       | 使用 1%的默认采样率检测并报告任何发现的泄露。这是默认级别，适合绝大部分的情况 |
+| ADVANCED     | 使用默认的采样率，报告所发现的任何的泄露以及对应的消息被访问的位置 |
+| PARANOID     | 类似于 ADVANCED，但是其将会对每次（对消息的）访问都进行采样。这对性能将会有很大的影响，应该只在调试阶段使用 |
+
+设置检测级别
+
+```java
+java -Dio.netty.leakDetectionLevel=ADVANCED
+```
+
+```java
+/**
+ * 代码清单 6-3 消费并释放入站消息
+ *
+ */
+@Sharable
+public class DiscardInboundHandler extends ChannelHandlerAdapter {
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        //通过调用 ReferenceCountUtil.release()方法释放资源
+        //不会通过调用 ChannelHandlerContext.fireChannelRead()方法将入站消息转发给下一个 ChannelInboundHandler
+        ReferenceCountUtil.release(msg);
+    }
+}
+```
+
+SimpleChannelInboundHandler实现会在消息被channelRead()方法消费之后自动释放消息
+
+```java
+/**
+ * 代码清单 6-4 丢弃并释放出站消息
+ *
+ */
+@Sharable
+public class DiscardOutboundHandler extends ChannelHandlerAdapter {
+    @Override
+    public void write(ChannelHandlerContext ctx,
+        Object msg, ChannelPromise promise) {
+        //通过使用 ReferenceCountUtil.realse(...)方法释放资源
+        ReferenceCountUtil.release(msg);
+        //通知 ChannelPromise数据已经被处理了
+        promise.setSuccess();
+    }
+}
+```
+
+​	重要的是，不仅要释放资源，还要通知 ChannelPromise。否则可能会出现 ChannelFutureListener 收不到某个消息已经被处理了的通知的情况。如果一个消息被消费或者丢弃了，并且没有传递给ChannelPipeline 中的下一个ChannelOutboundHandler，那么用户就有责任调用 ReferenceCountUtil.release()。如果消息到达了实际的传输层，那么当它被写入时或者 Channel 关闭时，都将被自动释放。
+
+## 6.2 ChannelPipeline 接口
+

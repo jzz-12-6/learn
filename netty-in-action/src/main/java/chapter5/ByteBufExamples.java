@@ -302,11 +302,11 @@ public class ByteBufExamples {
      * 代码清单 5-14 获取一个到 ByteBufAllocator 的引用
      */
     public static void obtainingByteBufAllocatorReference(){
-        Channel channel = CHANNEL_FROM_SOMEWHERE; //get reference form somewhere
+        Channel channel = CHANNEL_FROM_SOMEWHERE;
         //从 Channel 获取一个到ByteBufAllocator 的引用
         ByteBufAllocator allocator = channel.alloc();
         //...
-        ChannelHandlerContext ctx = CHANNEL_HANDLER_CONTEXT_FROM_SOMEWHERE; //get reference form somewhere
+        ChannelHandlerContext ctx = CHANNEL_HANDLER_CONTEXT_FROM_SOMEWHERE;
         //从 ChannelHandlerContext 获取一个到 ByteBufAllocator 的引用
         ByteBufAllocator allocator2 = ctx.alloc();
         //...
@@ -316,7 +316,7 @@ public class ByteBufExamples {
      * 代码清单 5-15 引用计数
      * */
     public static void referenceCounting(){
-        Channel channel = CHANNEL_FROM_SOMEWHERE; //get reference form somewhere
+        Channel channel = CHANNEL_FROM_SOMEWHERE;
         //从 Channel 获取ByteBufAllocator
         ByteBufAllocator allocator = channel.alloc();
         //...
@@ -331,7 +331,7 @@ public class ByteBufExamples {
      * 代码清单 5-16 释放引用计数的对象
      */
     public static void releaseReferenceCountedObject(){
-        ByteBuf buffer = BYTE_BUF_FROM_SOMEWHERE; //get reference form somewhere
+        ByteBuf buffer = BYTE_BUF_FROM_SOMEWHERE;
         //减少到该对象的活动引用。当减少到 0 时，该对象被释放，并且该方法返回 true
         boolean released = buffer.release();
         //...
