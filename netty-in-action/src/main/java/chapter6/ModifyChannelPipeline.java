@@ -2,8 +2,8 @@ package chapter6;
 
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.socket.nio.NioSocketChannel;
 
-import static io.netty.channel.DummyChannelPipeline.DUMMY_INSTANCE;
 
 /**
  * 代码清单 6-5 修改 ChannelPipeline
@@ -11,13 +11,13 @@ import static io.netty.channel.DummyChannelPipeline.DUMMY_INSTANCE;
  * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
  */
 public class ModifyChannelPipeline {
-    private static final ChannelPipeline CHANNEL_PIPELINE_FROM_SOMEWHERE = DUMMY_INSTANCE;
+    private static final ChannelPipeline CHANNEL_PIPELINE_FROM_SOMEWHERE = new NioSocketChannel().pipeline();
 
     /**
      * 代码清单 6-5 修改 ChannelPipeline
      * */
     public static void modifyPipeline() {
-        ChannelPipeline pipeline = CHANNEL_PIPELINE_FROM_SOMEWHERE; // get reference to pipeline;
+        ChannelPipeline pipeline = CHANNEL_PIPELINE_FROM_SOMEWHERE;
         //创建一个 FirstHandler 的实例
         FirstHandler firstHandler = new FirstHandler();
         //将该实例作为"handler1"添加到ChannelPipeline 中
@@ -36,7 +36,7 @@ public class ModifyChannelPipeline {
     }
 
     private static final class FirstHandler
-        extends ChannelHandlerAdapter {
+            extends ChannelHandlerAdapter {
 
     }
 

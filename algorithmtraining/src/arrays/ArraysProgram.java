@@ -2,6 +2,7 @@ package arrays;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
@@ -13,7 +14,93 @@ public class ArraysProgram {
 
 
     public static void main(String[] args) {
-        sumEvenAfterQueries(new int[]{1,2,3,4},new int[][]{{1,0},{-3,1},{-4,0},{2,3}}) ;
+        maximumProduct(new int[]{1,2,3}) ;
+    }
+
+    /**
+     * 628. 三个数的最大乘积
+     * 给定一个整型数组，在数组中找出由三个数组成的最大乘积，并输出这个乘积
+     * 给定的整型数组长度范围是[3,104]，数组中所有的元素范围是[-1000, 1000]
+     * 输入: [1,2,3]
+     * 输出: 6
+     * @param nums 数组
+     * @return int
+     */
+    public static int maximumProduct(int[] nums) {
+        //排序
+        Arrays.sort(nums);
+        int length = nums.length;
+        int first = nums[0];
+        int second = nums[1];
+        int last = nums[length -1];
+        int last1 = nums[length-2];
+        int last2 = nums[length-3];
+        int max = 1,max2=1;
+        max = first * second * last;
+        max2 = last * last1 * last2;
+        max = Math.max(max,max2);
+        return max;
+    }
+
+    /**
+     * 888. 公平的糖果交换
+     * 爱丽丝和鲍勃有不同大小的糖果棒：A[i] 是爱丽丝拥有的第 i 块糖的大小，B[j] 是鲍勃拥有的第 j 块糖的大小。
+     *
+     * 因为他们是朋友，所以他们想交换一个糖果棒，这样交换后，他们都有相同的糖果总量。（一个人拥有的糖果总量是他们拥有的糖果棒大小的总和。）
+     *
+     * 返回一个整数数组 ans，其中 ans[0] 是爱丽丝必须交换的糖果棒的大小，ans[1] 是 Bob 必须交换的糖果棒的大小。
+     *
+     * 如果有多个答案，你可以返回其中任何一个。保证答案存在。
+     * 输入：A = [1,1], B = [2,2]
+     * 输出：[1,2]
+     * 输入：A = [2], B = [1,3]
+     * 输出：[2,3]
+     * @param A A
+     * @param B B
+     * @return int[]
+     */
+    public static int[] fairCandySwap(int[] A, int[] B) {
+        int Asum = IntStream.of(A).sum();
+        int Bsum = IntStream.of(B).sum();
+        int average = (Bsum - Asum) / 2;
+        Set<Integer> collect = Arrays.stream(B).boxed().collect(Collectors.toSet());
+        int[] ans = new int[2];
+        for (int i : A) {
+            if(collect.contains(i+average)){
+                return new int[]{i,i+average};
+            }
+        }
+        return ans;
+    }
+
+
+    /**
+     * 268. 缺失数字
+     * 给定一个包含 0, 1, 2, ..., n 中 n 个数的序列，找出 0 .. n 中没有出现在序列中的那个数。
+     * 输入: [3,0,1]
+     * 输出: 2
+     * @param nums 数组
+     * @return int
+     */
+    public static int missingNumber(int[] nums) {
+        //初始化一个0-n的数组 对旧数组排序，然后比较
+        int length = nums.length;
+        int newLength = length+1;
+        int[] newNums = new int[newLength];
+        for (int i = 0; i <=length; i++) {
+            newNums[i] = i;
+        }
+        Arrays.sort(nums);
+        for (int i = 0; i <newLength; i++) {
+            if(i == newLength-1 || nums[i] != newNums[i]){
+                return newNums[i];
+            }
+        }
+        //对数组求和，
+        int sum = IntStream.of(nums).sum();
+        //return sum - length*(length+1)/2;
+
+        return -1;
     }
 
     /**
