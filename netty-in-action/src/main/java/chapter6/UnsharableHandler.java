@@ -1,17 +1,16 @@
 package chapter6;
 
 import io.netty.channel.ChannelHandler.Sharable;
+import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
 /**
  * 代码清单 6-11 @Sharable 的错误用法
  *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
  */
-//使用注解@Sharable标注
 @Sharable
-public class UnsharableHandler extends ChannelInboundHandlerAdapter {
+public class UnsharableHandler extends ChannelHandlerAdapter {
     private int count;
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {

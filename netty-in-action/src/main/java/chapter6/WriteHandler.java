@@ -7,7 +7,6 @@ import io.netty.channel.ChannelHandlerContext;
 /**
  * 代码清单 6-9 缓存到 ChannelHandlerContext 的引用
  *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
  */
 public class WriteHandler extends ChannelHandlerAdapter {
     private ChannelHandlerContext ctx;

@@ -1204,3 +1204,241 @@ public class DiscardOutboundHandler extends ChannelHandlerAdapter {
 
 ## 6.2 ChannelPipeline 接口
 
+​	每一个新创建的 Channel 都将会被分配一个新的 ChannelPipeline。这项关联是永久性的。
+
+​	根据事件的起源，事件会被ChannelHandler处理，随后调用ChannelHandlerContext实现，它将被转发给同一超类型的下一个ChannelHandler。
+
+​	ChannelHandlerContext可以使ChannelHandler和它的ChannelPipeline 以及其他的ChannelHandler相互交互。ChannelHandler可以通知其所属的ChannelPipeline 中的下一个ChannelHandler，甚至可以动态修改它所属的ChannelPipeline 。
+
+​	在ChannelPipeline传播事件时，会测试ChannelPipeline中的下一个ChannelHandler类型是否和事件的运动方向相匹配（出站或者入站）。不匹配则跳过该ChannelHandler并前进到下一个。
+
+### 6.2.1 修改ChannelPipeline
+
+
+
+| ChannelHandler 的用于修改 ChannelPipeline 的方法 | 描述                                                         |
+| ------------------------------------------------ | ------------------------------------------------------------ |
+| addFirst/addLat/addBefore/addAfter               | 将一个ChannelHandler 添加到ChannelPipeline 中                |
+| remove                                           | 将一个ChannelHandler 从ChannelPipeline 中移除                |
+| replace                                          | 将 ChannelPipeline 中的一个 ChannelHandler 替换为另一个 ChannelHandler |
+
+```java
+    /**
+     * 代码清单 6-5 修改 ChannelPipeline
+     * */
+    public static void modifyPipeline() {
+        ChannelPipeline pipeline = CHANNEL_PIPELINE_FROM_SOMEWHERE;
+        //创建一个 FirstHandler 的实例
+        FirstHandler firstHandler = new FirstHandler();
+        //将该实例作为"handler1"添加到ChannelPipeline 中
+        pipeline.addLast("handler1", firstHandler);
+        //将一个 SecondHandler的实例作为"handler2"添加到 ChannelPipeline的第一个槽中。这意味着它将被放置在已有的"handler1"之前
+        pipeline.addFirst("handler2", new SecondHandler());
+        //将一个 ThirdHandler 的实例作为"handler3"添加到 ChannelPipeline 的最后一个槽中
+        pipeline.addLast("handler3", new ThirdHandler());
+        //...
+        //通过名称移除"handler3"
+        pipeline.remove("handler3");
+        //通过引用移除FirstHandler（它是唯一的，所以不需要它的名称）
+        pipeline.remove(firstHandler);
+        //将 SecondHandler("handler2")替换为 FourthHandler:"handler4"
+        pipeline.replace("handler2", "handler4", new FourthHandler());
+    }
+    private static final class FirstHandler
+            extends ChannelHandlerAdapter {
+
+    }
+```
+
+​	ChannelHandler 的执行和阻塞:通常 ChannelPipeline 中的每一个 ChannelHandler 都是通过它的 EventLoop（I/O 线程）来处理传递给它的事件的。所以至关重要的是不要阻塞这个线程，因为这会对整体的 I/O 处理产生负面的影响。ChannelPipeline 有一些接受一个 EventExecutorGroup 的 add()方法。如果一个事件被传递给一个自定义的 EventExecutorGroup，它将被包含在这个 EventExecutorGroup 中的某个 EventExecutor 所处理，从而被从该Channel 本身的 EventLoop 中移除。Netty 提供了一个叫 DefaultEventExecutorGroup 的默认实现
+
+| ChannelPipeline 的用于访问 ChannelHandler 的操作 | 描述                                               |
+| ------------------------------------------------ | -------------------------------------------------- |
+| get                                              | 通过类型或者名称返回 ChannelHandler                |
+| context                                          | 返回和 ChannelHandler 绑定的 ChannelHandlerContext |
+| names                                            | 返回 ChannelPipeline 中所有 ChannelHandler 的名称  |
+
+### 6.2.2 触发事件
+
+
+
+| ChannelPipeline 的入站操作    | 描述                                                         |
+| ----------------------------- | ------------------------------------------------------------ |
+| fireChannelRegistered         | 调用 ChannelPipeline 中下一个 ChannelInboundHandler 的
+channelRegistered(ChannelHandlerContext)方法 |
+| fireChannelUnregistered       | 调用 ChannelPipeline 中下一个 ChannelInboundHandler 的
+channelUnregistered(ChannelHandlerContext)方法 |
+| fireChannelActive             | 调用 ChannelPipeline 中下一个 ChannelInboundHandler 的
+channelActive(ChannelHandlerContext)方法 |
+| fireChannelInactive           | 调用 ChannelPipeline 中下一个 ChannelInboundHandler 的
+channelInactive(ChannelHandlerContext)方法 |
+| fireExceptionCaught           | 调用 ChannelPipeline 中下一个 ChannelInboundHandler 的
+exceptionCaught(ChannelHandlerContext, Throwable)方法 |
+| fireUserEventTriggered        | 调用 ChannelPipeline 中下一个 ChannelInboundHandler 的
+userEventTriggered(ChannelHandlerContext, Object)方法 |
+| fireChannelRead               | 调用 ChannelPipeline 中下一个 ChannelInboundHandler 的
+channelRead(ChannelHandlerContext, Object msg)方法 |
+| fireChannelReadComplete       | 调用 ChannelPipeline 中下一个 ChannelInboundHandler 的
+channelReadComplete(ChannelHandlerContext)方法 |
+| fireChannelWritabilityChanged | 调用 ChannelPipeline 中下一个 ChannelInboundHandler 的
+channelWritabilityChanged(ChannelHandlerContext)方法 |
+
+| ChannelPipeline 的出站操作 | 描述                                                         |
+| -------------------------- | ------------------------------------------------------------ |
+| bind                       | 将 Channel 绑定到一个本地地址，这将调用 ChannelPipeline 中的下一个
+ChannelOutboundHandler 的 bind(ChannelHandlerContext, SocketAddress, ChannelPromise)方法 |
+| connect                    | 将 Channel 连接到一个远程地址，这将调用 ChannelPipeline 中的下一个
+ChannelOutboundHandler 的 connect(ChannelHandlerContext, SocketAddress, ChannelPromise)方法 |
+| disconnect                 | 将Channel 断开连接。这将调用ChannelPipeline 中的下一个ChannelOutboundHandler 的 disconnect(ChannelHandlerContext, Channel Promise)方法 |
+| close                      | 将 Channel 关闭。这将调用 ChannelPipeline 中的下一个 ChannelOutboundHandler 的 close(ChannelHandlerContext, ChannelPromise)方法 |
+| deregister                 | 将 Channel 从它先前所分配的 EventExecutor（即 EventLoop）中注销。这将调
+用 ChannelPipeline 中的下一个 ChannelOutboundHandler 的 deregister
+(ChannelHandlerContext, ChannelPromise)方法 |
+| flush                      | 冲刷Channel所有挂起的写入。这将调用ChannelPipeline中的下一个ChannelOutboundHandler 的 flush(ChannelHandlerContext)方法 |
+| write                      | 将消息写入 Channel。这将调用 ChannelPipeline 中的下一个 ChannelOutboundHandler的write(ChannelHandlerContext, Object msg, ChannelPromise)方法。注意：这并不会将消息写入底层的 Socket，而只会将它放入队列中。要将它写入 Socket，需要调用 flush()或者 writeAndFlush()方法 |
+| writeAndFlush              | 这是一个先调用 write()方法再接着调用 flush()方法的便利方法   |
+| read                       | 请求从 Channel 中读取更多的数据。这将调用 ChannelPipeline 中的下一个
+ChannelOutboundHandler 的 read(ChannelHandlerContext)方法 |
+
+ChannelPipeline 保存了与 Channel 相关联的 ChannelHandler；
+ChannelPipeline 可以根据需要，通过添加或者删除 ChannelHandler 来动态地修改；
+ChannelPipeline 有着丰富的 API 用以被调用，以响应入站和出站事件
+
+## 6.3 ChannelHandlerContext 接口
+
+​	ChannelHandlerContext 代表了 ChannelHandler 和 ChannelPipeline 之间的关联，每当有 ChannelHandler 添加到 ChannelPipeline 中时，都会创建 ChannelHandlerContext。ChannelHandlerContext 的主要功能是管理它所关联的 ChannelHandler 和在同一个 ChannelPipeline 中的其他 ChannelHandler 之间的交互。如果调用 Channel 或者 ChannelPipeline 上的这些方法，它们将沿着整个 ChannelPipeline 进行传播。而调用位于 ChannelHandlerContext上的相同方法，则将从当前所关联的 ChannelHandler 开始，并且只会传播给位于该ChannelPipeline 中的下一个能够处理该事件的 ChannelHandler
+
+| ChannelHandlerContext 的 API  | 描述                                                         |
+| ----------------------------- | ------------------------------------------------------------ |
+| alloc                         | 返回和这个实例相关联的Channel 所配置的 ByteBufAllocator      |
+| bind                          | 绑定到给定的 SocketAddress，并返回 ChannelFuture             |
+| channel                       | 返回绑定到这个实例的 Channel                                 |
+| close                         | 关闭 Channel，并返回 ChannelFuture                           |
+| connect                       | 连接给定的 SocketAddress，并返回 ChannelFuture               |
+| deregister                    | 从之前分配的 EventExecutor 注销，并返回 ChannelFuture        |
+| disconnect                    | 从远程节点断开，并返回 ChannelFuture                         |
+| executor                      | 返回调度事件的 EventExecutor                                 |
+| fireChannelActive             | 触发对下一个 ChannelInboundHandler 上的
+channelActive()方法（已连接）的调用 |
+| fireChannelInactive           | 触发对下一个 ChannelInboundHandler 上的
+channelInactive()方法（已关闭）的调用 |
+| fireChannelRead               | 触发对下一个 ChannelInboundHandler 上的
+channelRead()方法（已接收的消息）的调用 |
+| fireChannelReadComplete       | 触发对下一个ChannelInboundHandler上的
+channelReadComplete()方法的调用 |
+| fireChannelRegistered         | 触发对下一个 ChannelInboundHandler 上的
+fireChannelRegistered()方法的调用 |
+| fireChannelUnregistered       | 触发对下一个 ChannelInboundHandler 上的
+fireChannelUnregistered()方法的调用 |
+| fireChannelWritabilityChanged | 触发对下一个 ChannelInboundHandler 上的
+fireChannelWritabilityChanged()方法的调用 |
+| fireExceptionCaught           | 触发对下一个 ChannelInboundHandler 上的
+fireExceptionCaught(Throwable)方法的调用 |
+| fireUserEventTriggered        | 触发对下一个 ChannelInboundHandler 上的
+fireUserEventTriggered(Object evt)方法的调用 |
+| handler                       | 返回绑定到这个实例的 ChannelHandler                          |
+| isRemoved                     | 如果所关联的 ChannelHandler 已经被从 ChannelPipeline
+中移除则返回 true |
+| name                          | 返回这个实例的唯一名称                                       |
+| pipeline                      | 返回这个实例所关联的 ChannelPipeline                         |
+| read                          | 将数据从Channel读取到第一个入站缓冲区；如果读取成功则触
+发 一个channelRead事件，并（在最后一个消息被读取完成后）
+通 知 ChannelInboundHandler 的 channelReadComplete
+(ChannelHandlerContext)方法 |
+| write                         | 通过这个实例写入消息并经过 ChannelPipeline                   |
+| writeAndFlush                 | 通过这个实例写入并冲刷消息并经过 ChannelPipeline             |
+
+​	ChannelHandlerContext 和 ChannelHandler 之间的关联（绑定）是永远不会改变的，所以缓存对它的引用是安全的；
+ 	相对于其他类的同名方法，ChannelHandlerContext
+的方法将产生更短的事件流，应该尽可能地利用这个特性来获得最大的性能
+
+### 6.3.1 使用 ChannelHandlerContext
+
+![ChannelHandlerContext1.png](https://github.com/jzz-12-6/image/blob/master/ChannelHandlerContext1.png?raw=true)
+
+```java
+    /**
+     * 代码清单 6-6 从 ChannelHandlerContext 访问 Channel
+     * */
+    public static void writeViaChannel() {
+        ChannelHandlerContext ctx = CHANNEL_HANDLER_CONTEXT_FROM_SOMEWHERE;
+        //获取到与 ChannelHandlerContext相关联的 Channel 的引用
+        Channel channel = ctx.channel();
+        //通过 Channel 写入缓冲区
+        channel.write(Unpooled.copiedBuffer("Netty in Action",
+                CharsetUtil.UTF_8));
+
+    }
+    /**
+     * 代码清单 6-7 通过 ChannelHandlerContext 访问 ChannelPipeline
+     * */
+    public static void writeViaChannelPipeline() {
+        ChannelHandlerContext ctx = CHANNEL_HANDLER_CONTEXT_FROM_SOMEWHERE; 
+        //获取到与 ChannelHandlerContext相关联的 ChannelPipeline 的引用
+        ChannelPipeline pipeline = ctx.pipeline();
+        //通过 ChannelPipeline写入缓冲区
+        pipeline.write(Unpooled.copiedBuffer("Netty in Action",
+                CharsetUtil.UTF_8));
+
+    }
+ 	/**
+     * 代码清单 6-8 调用 ChannelHandlerContext 的 write()方法
+     * */
+    public static void writeViaChannelHandlerContext() {
+        //获取到 ChannelHandlerContext 的引用
+        ChannelHandlerContext ctx = CHANNEL_HANDLER_CONTEXT_FROM_SOMEWHERE;
+        //write()方法将把缓冲区数据发送到下一个 ChannelHandler
+        ctx.write(Unpooled.copiedBuffer("Netty in Action", CharsetUtil.UTF_8));
+    }
+```
+
+![ChannelHandler2.png](https://github.com/jzz-12-6/image/blob/master/ChannelHandler2.png?raw=true)
+
+​	为什么会想要从 ChannelPipeline 中的某个特定点开始传播事件呢？
+
+​	1.为了减少将事件传经对它不感兴趣的 ChannelHandler 所带来的开销
+
+​	2.为了避免将事件传经那些可能会对它感兴趣的 ChannelHandler
+
+![ChannelHandler3.png](https://github.com/jzz-12-6/image/blob/master/ChannelHandler3.png?raw=true)
+
+### 6.3.2 ChannelHandler 和 ChannelHandlerContext 的高级用法
+
+```java
+/**
+ * 代码清单 6-9 缓存到 ChannelHandlerContext 的引用
+ *
+ */
+public class WriteHandler extends ChannelHandlerAdapter {
+    private ChannelHandlerContext ctx;
+    @Override
+    public void handlerAdded(ChannelHandlerContext ctx) {
+        //存储到 ChannelHandlerContext的引用以供稍后使用
+        this.ctx = ctx;
+    }
+    public void send(String msg) {
+        //使用之前存储的到 ChannelHandlerContext的引用来发送消息
+        ctx.writeAndFlush(msg);
+    }
+}
+
+/**
+ * 代码清单 6-10 可共享的 ChannelHandler
+ * 多个 ChannelPipeline 中共享同一个 ChannelHandler
+ * 只应该在确定了你的 ChannelHandler 是线程安全的时才使用@Sharable 注解。
+ */
+@Sharable
+public class SharableHandler extends ChannelHandlerAdapter {
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        System.out.println("channel read message " + msg);
+        //记录方法调用，并转发给下一个 ChannelHandler
+        ctx.fireChannelRead(msg);
+    }
+}
+```
+
+## 6.4 异常处理
+
+### 6.4.1 处理入站异常
+
