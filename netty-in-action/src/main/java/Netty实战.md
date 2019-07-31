@@ -1442,3 +1442,25 @@ public class SharableHandler extends ChannelHandlerAdapter {
 
 ### 6.4.1 处理入站异常
 
+```java
+/**
+ * 代码清单 6-12 基本的入站异常处理
+ * 异常会按照入站方向流动 一般异常处理放在ChannelPipeline的最后
+ */
+public class InboundExceptionHandler extends ChannelHandlerAdapter {
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx,
+        Throwable cause) {
+        cause.printStackTrace();
+        ctx.close();
+    }
+}
+
+```
+
+​	ChannelHandler.exceptionCaught()的默认实现是简单地将当前异常转发给ChannelPipeline 中的下一个 ChannelHandler；
+​	如果异常到达了 ChannelPipeline 的尾端，它将会被记录为未被处理；
+​	要想定义自定义的处理逻辑，你需要重写 exceptionCaught()方法。然后你需要决定是否需要将该异常传播出去
+
+### 6.4.2 处理出战异常
+

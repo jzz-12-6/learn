@@ -1,5 +1,6 @@
 package arrays;
 
+import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -14,9 +15,29 @@ public class ArraysProgram {
 
 
     public static void main(String[] args) {
-        maximumProduct(new int[]{1,2,3}) ;
+        prefixesDivBy5(new int[]{1,0,1,1,1,1,0,0,0,0,1,0,0,0,0,0,1,0,0,1,1,1,1,1,0,0,0,0,1,1,1,0,0,0,0,0,1,0,0,0,1,0,0,1,1,1,1,1,1,0,1,1,0,1,0,0,0,0,0,0,1,0,1,1,1,0,0,1,0}) ;
     }
-
+    //[false,false,true,false,false,false,false,false,false,false,true,true,true,true,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,true,false,false,true,false,false,true,true,true,true,true,true,true,false,false,true,true,false,false,false,false,false]
+    //[false,false,true,false,false,false,false,false,false,false,true,true,true,true,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,true,false,false,true,false,false,true,true,true,true,true,true,true,false,false,true,false,false,false,false,true,true]
+    /**
+     *
+     */
+    public static List<Boolean> prefixesDivBy5(int[] A) {
+        int length = A.length;
+        Map<Long,Boolean> map = new HashMap<>(length);
+        BigInteger temp = new BigInteger("0");
+        List<Boolean> ans = new ArrayList<>(length);
+        BigInteger two = BigInteger.TWO;
+        BigInteger five = BigInteger.valueOf(5L);
+        for (int i = 0; i < length; i++) {
+            if(A[i] == 1){
+                temp = temp.multiply(two).add(BigInteger.ONE);
+            }
+            BigInteger mod = temp.mod(five);
+            ans.add(mod.intValue() == 0);
+        }
+        return ans;
+    }
     /**
      * 628. 三个数的最大乘积
      * 给定一个整型数组，在数组中找出由三个数组成的最大乘积，并输出这个乘积
