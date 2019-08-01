@@ -14,16 +14,13 @@ import io.netty.channel.socket.nio.NioSocketChannel;
  * 代码清单 6-13 添加 ChannelFutureListener 到 ChannelFuture
  */
 public class ChannelFutures {
-    private static final Channel CHANNEL_FROM_SOMEWHERE = new NioSocketChannel();
-    private static final ByteBuf SOME_MSG_FROM_SOMEWHERE = Unpooled.buffer(1024);
-
     /**
      * 代码清单 6-13 添加 ChannelFutureListener 到 ChannelFuture
      * */
     public static void addingChannelFutureListener(){
-        Channel channel = CHANNEL_FROM_SOMEWHERE; // get reference to pipeline;
-        ByteBuf someMessage = SOME_MSG_FROM_SOMEWHERE; // get reference to pipeline;
-        //...
+        Channel channel = new NioSocketChannel();
+        ByteBuf someMessage = Unpooled.buffer(1024);
+        //获取出战操作的ChannelFuture
         ChannelFuture future = channel.write(someMessage);
         future.addListener(new ChannelFutureListener() {
             @Override

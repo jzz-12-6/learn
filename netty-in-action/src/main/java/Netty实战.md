@@ -1464,3 +1464,152 @@ public class InboundExceptionHandler extends ChannelHandlerAdapter {
 
 ### 6.4.2 处理出战异常
 
+​	用于处理出站操作中的正常完成以及异常的选项，都基于以下的通知机制。
+
+​	1.每个出站操作都将返回一个 ChannelFuture。注册到 ChannelFuture 的 ChannelFutureListener 将在操作完成时被通知该操作是成功了还是出错了。
+​	2.几乎所有的 ChannelOutboundHandler 上的方法都会传入一个 ChannelPromise的实例。作为 ChannelFuture 的子类，ChannelPromise 也可以被分配用于异步通知的监听器。但是，ChannelPromise 还具有提供立即通知的可写方法ChannelPromise setSuccess() || setFailure(Throwable cause);
+
+```java
+	 /**
+     * 代码清单 6-13 添加 ChannelFutureListener 到 ChannelFuture
+     * */
+    public static void addingChannelFutureListener(){
+        Channel channel = new NioSocketChannel();
+        ByteBuf someMessage = Unpooled.buffer(1024);
+        //获取出战操作的ChannelFuture
+        ChannelFuture future = channel.write(someMessage);
+        future.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture f) {
+                if (!f.isSuccess()) {
+                    f.cause().printStackTrace();
+                    f.channel().close();
+                }
+            }
+        });
+    }
+/**
+ * 代码清单 6-14 添加 ChannelFutureListener 到 ChannelPromise
+ * 将 ChannelFutureListener 添加到即将作为参数传递给 ChannelOutboundHandler 的方法的 ChannelPromise
+ */
+public class OutboundExceptionHandler extends ChannelHandlerAdapter {
+    @Override
+    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
+        
+        promise.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture f) {
+                if (!f.isSuccess()) {
+                    f.cause().printStackTrace();
+                    f.channel().close();
+                }
+            }
+        });
+    }
+}
+
+```
+
+
+
+# 第 7 章 EventLoop和线程模型
+
+## 7.1 线程模型概述
+
+​	基本的线程池化模式：
+
+1. 从池的空闲线程列表中选择一个 Thread，并且指派它去运行一个已提交的任务（一个Runnable 的实现）；
+2. 当任务完成时，将该 Thread 返回给该列表，使其可被重用。
+
+![Executoræ§è¡é"è¾.png](https://github.com/jzz-12-6/image/blob/master/netty-in-action/Executor%E6%89%A7%E8%A1%8C%E9%80%BB%E8%BE%91.png?raw=true)
+
+## 7.2 EventLoop 接口
+
+​	事件循环:运行任务来处理在连接的生命周期内发生的事件是任何网络框架的基本功能
+
+```java
+    /**
+     * 代码清单 7-1 在事件循环中执行任务
+     * */
+    public static void executeTaskInEventLoop() {
+        boolean terminated = true;
+        while (!terminated) {
+            //阻塞，直到有事件已经就绪可被运行
+            List<Runnable> readyEvents = blockUntilEventsReady();
+            for (Runnable ev: readyEvents) {
+                //循环遍历，并处理所有的事件
+                ev.run();
+            }
+        }
+    }
+```
+
+​	Netty 的 EventLoop 是协同设计的一部分，它采用了两个基本的 API：并发和网络编程。
+
+1. io.netty.util.concurrent 包构建在 JDK 的 java.util.concurrent 包上，用来提供线程执行器。
+2. io.netty.channel 包中的类，为了与 Channel 的事件进行交互，扩展了这些接口/类。
+
+![EventLoop çç±"å±æ¬¡ç"æ.png](https://github.com/jzz-12-6/image/blob/master/netty-in-action/EventLoop%20%E7%9A%84%E7%B1%BB%E5%B1%82%E6%AC%A1%E7%BB%93%E6%9E%84.png?raw=true)
+
+​	在这个模型中，一个 EventLoop 将由一个永远都不会改变的 Thread 驱动，同时任务（Runnable 或者 Callable）可以直接提交给 EventLoop 实现，以立即执行或者调度执行。根据配置和可用核心的不同，可能会创建多个 EventLoop 实例用以优化资源的使用，并且单个EventLoop 可能会被指派用于服务多个 Channel。EventLoop.parent():返回到当前EventLoop实现的实例所属的EventLoopGroup的引用。
+
+### 7.2.1 Netty 4 中的 I/O 和事件处理
+
+​	由 I/O 操作触发的事件将流经安装了一个或者多个ChannelHandler 的 ChannelPipeline。传播这些事件的方法调用可以随后被 ChannelHandler 所拦截，并且可以按需地处理事件。在Netty 4 中，所有的I/O操作和事件都由已经被分配给了EventLoop的那个Thread来处理
+
+### 7.3 任务调度
+
+### 7.3.1 JDK的任务调度API
+
+| java.util.concurrent.Executors 类的工厂方法                  | 描述                                                         |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| newScheduledThreadPool(int corePoolSize)
+
+newScheduledThreadPool(int corePoolSize,ThreadFactorythreadFactory) | 创建一个 ScheduledThreadExecutorService，
+用于调度命令在指定延迟之后运行或者周期性地执行。它使用 corePoolSize 参数来计算线程数 |
+| newSingleThreadScheduledExecutor()
+newSingleThreadScheduledExecutor( ThreadFactorythreadFactory) | 创建一个 ScheduledThreadExecutorService，
+用于调度命令在指定延迟之后运行或者周期性地执
+行。它使用一个线程来执行被调度的任务 |
+
+```java
+    /**
+     * 代码清单 7-2 使用 ScheduledExecutorService 调度任务
+     * 作为线程池管理的一部分，将会有额外的线程创建。如果有大量任务被紧凑地调度，那么这将成为一个瓶颈
+     * */
+    public static void schedule() {
+        //创建一个其线程池具有 10 个线程的ScheduledExecutorService
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(10);
+
+        ScheduledFuture<?> future = executor.schedule(()->{
+                    //创建一个 Runnable，以供调度稍后执行
+                    System.out.println("Now it is 60 seconds later");
+                },
+        //调度任务在从现在开始的 60 秒之后执行
+        60, TimeUnit.SECONDS);
+        //一旦调度任务执行完成，就关闭 ScheduledExecutorService 以释放资源
+        executor.shutdown();
+    }
+```
+
+### 7.3.2 使用 EventLoop 调度任务
+
+```java
+    /**
+     * 代码清单 7-3 使用 EventLoop 调度任务
+     * */
+    public static void scheduleViaEventLoop() {
+        Channel ch = new NioSocketChannel();;
+        ScheduledFuture<?> future = ch.eventLoop().schedule(()->{
+            //创建一个 Runnable以供调度稍后执行
+            System.out.println("60 seconds later");
+            //调度任务在从现在开始的 60 秒之后执行
+            },60,TimeUnit.SECONDS);
+        ScheduledFuture<?> future = ch.eventLoop().scheduleAtFixedRate(()->{
+            //创建一个 Runnable以供调度稍后执行这将一直运行，直到ScheduledFuture 被取消
+            System.out.println("60 seconds later");
+            //调度在 60 秒之后，并且以后每间隔 60 秒运行
+        },60,60,TimeUnit.SECONDS);
+    }
+```
+
