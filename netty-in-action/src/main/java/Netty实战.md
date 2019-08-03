@@ -1610,6 +1610,94 @@ newSingleThreadScheduledExecutor( ThreadFactorythreadFactory) | 创建一个 Sch
             System.out.println("60 seconds later");
             //调度在 60 秒之后，并且以后每间隔 60 秒运行
         },60,60,TimeUnit.SECONDS);
+         boolean mayInterruptIfRunning = false;
+        //取消该任务，防止它再次运行
+        future.cancel(mayInterruptIfRunning);
     }
 ```
+
+### 7.4 实现细节
+
+### 7.4.1 线程管理
+
+​	EventLoop将负责处理一个Channel的整个生命周期内的所有事件，如果（当前）调用线程正是支撑 EventLoop 的线程，那么所提交的代码块将会被（直接）执行。否则，EventLoop 将调度该任务以便稍后执行，并将它放入到内部队列中。任何的 Thread 与 Channel 直接交互而无需在 ChannelHandler 中进行额外同步。
+
+​	每个 EventLoop 都有它自已的任务队列，独立于任何其他的 EventLoop。
+
+![å¾7-3 EventLoopçæ§è¡é"è¾.png](https://github.com/jzz-12-6/image/blob/master/netty-in-action/%E5%9B%BE7-3%20EventLoop%E7%9A%84%E6%89%A7%E8%A1%8C%E9%80%BB%E8%BE%91.png?raw=true)
+
+永远不要将一个长时间运行的任务放入到执行队列中，因为它将阻塞需要在同一线程上执行的任何其他任务
+
+### 7.4.2 EventLoop/线程的分配
+
+1．异步传输
+
+​	异步传输实现只使用了少量的 EventLoop（以及和它们相关联的 Thread），而且在当前的线程模型中，它们可能会被多个 Channel 所共享。可以通过尽可能少量的 Thread 来支撑大量的 Channel，而不是每个 Channel 分配一个 Thread。
+
+![å¾ 7-4 ç¨äºéé"å¡ä¼ è¾ï¼å¦ NIO å AIOï¼ç EventLoop åéæ¹å¼.png](https://github.com/jzz-12-6/image/blob/master/netty-in-action/%E5%9B%BE%207-4%20%E7%94%A8%E4%BA%8E%E9%9D%9E%E9%98%BB%E5%A1%9E%E4%BC%A0%E8%BE%93%EF%BC%88%E5%A6%82%20NIO%20%E5%92%8C%20AIO%EF%BC%89%E7%9A%84%20EventLoop%20%E5%88%86%E9%85%8D%E6%96%B9%E5%BC%8F.png?raw=true)
+
+​	EventLoopGroup 负责为每个新创建的 Channel 分配一个 EventLoop。在当前实现中，使用顺序循环（round-robin）的方式进行分配以获取一个均衡的分布，并且相同的 EventLoop可能会被分配给多个 Channel。对于所有相关联的 Channel 来说，ThreadLocal 都将是一样的。
+
+2. 阻塞传输
+
+   每一个 Channel 都将被分配给一个 EventLoop（以及它的 Thread）。
+
+![å¾ 7-5 é"å¡ä¼ è¾ï¼å¦ OIOï¼ç EventLoop åéæ¹å¼.png](https://github.com/jzz-12-6/image/blob/master/netty-in-action/%E5%9B%BE%207-5%20%E9%98%BB%E5%A1%9E%E4%BC%A0%E8%BE%93%EF%BC%88%E5%A6%82%20OIO%EF%BC%89%E7%9A%84%20EventLoop%20%E5%88%86%E9%85%8D%E6%96%B9%E5%BC%8F.png?raw=true)
+
+
+
+# 第 8 章 引导（Bootstrapping）
+
+​	引导一个应用程序是指对它进行配置，并使它运行起来的过程
+
+## 8.1 Bootstrap 类
+
+引导类的层次结构
+
+```java
+//子类型 B 是其父类型的一个类型参数，因此可以返回到运行时实例的引用以支持方法的链式调用（也就是所谓的流式语法）
+public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C extends Channel> implements Cloneable 
+public class Bootstrap extends AbstractBootstrap<Bootstrap, Channel>
+public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerChannel> 
+    
+```
+
+
+
+​	服务器致力于使用一个父 Channel 来接受来自客户端的连接，并创建子 Channel 以用于它们之间的通信；而客户端将最可能只需要一个单独的、没有父 Channel 的 Channel 来用于所有的网络交互。两种应用程序类型之间通用的引导步骤由 AbstractBootstrap 处理，特定于客户端或者服务器的引导步骤则分别由 Bootstrap 或 ServerBootstrap 处理。
+
+为什么引导类是 Cloneable?
+
+​	可能会需要创建多个具有类似配置或者完全相同配置的Channel。为了支持这种模式而又不需要为每个 Channel 都创建并配置一个新的引导类实例，在一个已经配置完成的引导类实例上调用clone()方法将返回另一个可以立即使用的引导类实例。这种方式只会创建引导类实例的EventLoopGroup的一个浅拷贝，所以，后者将在所有克隆的Channel实例之间共享。
+
+### 8.2 引导客户端和无连接协议
+
+​	Bootstrap 类被用于客户端或者使用了无连接协议的应用程序中。
+
+| Bootstrap 类的 API                                           | 描述                                                         |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Bootstrap group(EventLoopGroup)                              | 设置用于处理 Channel 所有事件的 EventLoopGroup               |
+| Bootstrap channel(
+Class<? extends C>)
+
+Bootstrap channelFactory(
+ChannelFactory<? extends C>) | channel()方法指定了Channel的实现类。如果该实现类没提供默认的构造函数 ，可以通过调用channelFactory()方法来指定一个工厂类，它将会被bind()方法调用 |
+| Bootstrap localAddress(
+SocketAddress)                        | 指定 Channel 应该绑定到的本地地址。如果没有指定，则将由操作系统创建一个随机的地址。或者，也可以通过bind()或者 connect()方法指定 localAddress |
+| Bootstrap option(
+ChannelOption<T> option,T value)            | 设置 ChannelOption，其将被应用到每个新创建的Channel 的 ChannelConfig。这些选项将会通过bind()或者 connect()方法设置到 Channel，不管哪个先被调用。这个方法在 Channel 已经被创建后再调用
+将不会有任何的效果。支持的 ChannelOption 取决于使用的 Channel 类型 |
+| Bootstrap attr(
+Attribute<T> key, T value)                    | 指定新创建的 Channel 的属性值。这些属性值是通过bind()或者 connect()方法设置到 Channel 的，具体取决于谁最先被调用。这个方法在 Channel 被创建后将不会有任何的效果。 |
+| Bootstrap 
+handler(ChannelHandler)                            | 设置将被添加到 ChannelPipeline 以接收事件通知的ChannelHandler |
+| Bootstrap clone()                                            | 创建一个当前 Bootstrap 的克隆，其具有和原始的Bootstrap 相同的设置信息 |
+| Bootstrap remoteAddress(
+SocketAddress)                       | 设置远程地址。或者，也可以通过 connect()方法来指定它         |
+| ChannelFuture connect()                                      | 连接到远程节点并返回一个 ChannelFuture，其将会在连接操作完成后接收到通知 |
+| ChannelFuture bind()                                         | 绑定 Channel 并返回一个 ChannelFuture，其将会在绑定操作完成后接收到通知，在那之后必须调用 Channel.connect()方法来建立连接 |
+
+### 8.2.1 引导客户端
+
+​	Bootstrap 类负责为客户端和使用无连接协议的应用程序创建 Channel
 

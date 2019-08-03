@@ -68,7 +68,9 @@ public class ScheduleExamples {
      * 代码清单 7-5 使用 ScheduledFuture 取消任务
      * */
     public static void cancelingTaskUsingScheduledFuture(){
-        Channel ch = CHANNEL_FROM_SOMEWHERE; // get reference from somewhere
+        Channel ch = CHANNEL_FROM_SOMEWHERE;
+
+
         //...
         //调度任务，并获得所返回的ScheduledFuture
         ScheduledFuture<?> future = ch.eventLoop().scheduleAtFixedRate(
