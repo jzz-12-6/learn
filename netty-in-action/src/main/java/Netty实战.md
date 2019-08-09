@@ -1654,6 +1654,8 @@ newSingleThreadScheduledExecutor( ThreadFactorythreadFactory) | 创建一个 Sch
 
 引导类的层次结构
 
+![å¾ 8-1 å¼å¯¼ç±»çå±æ¬¡ç»æ.png](https://github.com/jzz-12-6/image/blob/master/netty-in-action/%E5%9B%BE%208-1%20%E5%BC%95%E5%AF%BC%E7%B1%BB%E7%9A%84%E5%B1%82%E6%AC%A1%E7%BB%93%E6%9E%84.png?raw=true)
+
 ```java
 //子类型 B 是其父类型的一个类型参数，因此可以返回到运行时实例的引用以支持方法的链式调用（也就是所谓的流式语法）
 public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C extends Channel> implements Cloneable 
@@ -1677,27 +1679,387 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
 | Bootstrap 类的 API                                           | 描述                                                         |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | Bootstrap group(EventLoopGroup)                              | 设置用于处理 Channel 所有事件的 EventLoopGroup               |
-| Bootstrap channel(
-Class<? extends C>)
-
-Bootstrap channelFactory(
-ChannelFactory<? extends C>) | channel()方法指定了Channel的实现类。如果该实现类没提供默认的构造函数 ，可以通过调用channelFactory()方法来指定一个工厂类，它将会被bind()方法调用 |
-| Bootstrap localAddress(
-SocketAddress)                        | 指定 Channel 应该绑定到的本地地址。如果没有指定，则将由操作系统创建一个随机的地址。或者，也可以通过bind()或者 connect()方法指定 localAddress |
-| Bootstrap option(
-ChannelOption<T> option,T value)            | 设置 ChannelOption，其将被应用到每个新创建的Channel 的 ChannelConfig。这些选项将会通过bind()或者 connect()方法设置到 Channel，不管哪个先被调用。这个方法在 Channel 已经被创建后再调用
-将不会有任何的效果。支持的 ChannelOption 取决于使用的 Channel 类型 |
-| Bootstrap attr(
-Attribute<T> key, T value)                    | 指定新创建的 Channel 的属性值。这些属性值是通过bind()或者 connect()方法设置到 Channel 的，具体取决于谁最先被调用。这个方法在 Channel 被创建后将不会有任何的效果。 |
-| Bootstrap 
-handler(ChannelHandler)                            | 设置将被添加到 ChannelPipeline 以接收事件通知的ChannelHandler |
+| Bootstrap channel(Class<? extends C>)<br/>Bootstrap channelFactory(ChannelFactory<? extends C>) | channel()方法指定了Channel的实现类。如果该实现类没提供默认的构造函数 ，可以通过调用channelFactory()方法来指定一个工厂类，它将会被bind()方法调用 |
+| Bootstrap localAddress(SocketAddress)                        | 指定 Channel 应该绑定到的本地地址。如果没有指定，则将由操作系统创建一个随机的地址。或者，也可以通过bind()或者 connect()方法指定 localAddress |
+| Bootstrap option(<br/>ChannelOption<T> option,T value)       | 设置 ChannelOption，其将被应用到每个新创建的Channel 的 ChannelConfig。这些选项将会通过bind()或者 connect()方法设置到 Channel，不管哪个先被调用。这个方法在 Channel 已经被创建后再调用将不会有任何的效果。支持的 ChannelOption 取决于使用的 Channel 类型 |
+| Bootstrap attr(<br/>Attribute<T> key, T value)               | 指定新创建的 Channel 的属性值。这些属性值是通过bind()或者 connect()方法设置到 Channel 的，具体取决于谁最先被调用。这个方法在 Channel 被创建后将不会有任何的效果。 |
+| Bootstrap <br/>handler(ChannelHandler)                       | 设置将被添加到 ChannelPipeline 以接收事件通知的ChannelHandler |
 | Bootstrap clone()                                            | 创建一个当前 Bootstrap 的克隆，其具有和原始的Bootstrap 相同的设置信息 |
-| Bootstrap remoteAddress(
-SocketAddress)                       | 设置远程地址。或者，也可以通过 connect()方法来指定它         |
+| Bootstrap remoteAddress(<br/>SocketAddress)                  | 设置远程地址。或者，也可以通过 connect()方法来指定它         |
 | ChannelFuture connect()                                      | 连接到远程节点并返回一个 ChannelFuture，其将会在连接操作完成后接收到通知 |
 | ChannelFuture bind()                                         | 绑定 Channel 并返回一个 ChannelFuture，其将会在绑定操作完成后接收到通知，在那之后必须调用 Channel.connect()方法来建立连接 |
+
+
 
 ### 8.2.1 引导客户端
 
 ​	Bootstrap 类负责为客户端和使用无连接协议的应用程序创建 Channel
+
+![å¾ 8-2 å¼å¯¼è¿ç¨.png](https://github.com/jzz-12-6/image/blob/master/netty-in-action/%E5%9B%BE%208-2%20%E5%BC%95%E5%AF%BC%E8%BF%87%E7%A8%8B.png?raw=true)
+
+```java
+    /**
+     * 代码清单 8-1 引导一个客户端
+     * */
+    public void bootstrap() {
+        //设置 EventLoopGroup，提供用于处理 Channel 事件的 EventLoop
+        EventLoopGroup group = new NioEventLoopGroup();
+        //创建一个Bootstrap类的实例以创建和连接新的客户端Channel
+        Bootstrap bootstrap = new Bootstrap();
+        bootstrap.group(group)
+            //指定要使用的Channel 实现
+            .channel(NioSocketChannel.class)
+            //设置用于 Channel 事件和数据的ChannelInboundHandler
+            .handler(new SimpleChannelInboundHandlerEt());
+        //连接到远程主机
+        ChannelFuture future = bootstrap.connect(
+            new InetSocketAddress("www.manning.com", 80));
+        future.addListener((ChannelFuture channelFuture)->{
+            if (channelFuture.isSuccess()) {
+                System.out.println("Connection established");
+            } else {
+                System.err.println("Connection attempt failed");
+                channelFuture.cause().printStackTrace();
+            }
+        });
+    }
+
+```
+
+### 8.2.2 Channel 和 EventLoopGroup 的兼容性
+
+​		可以从包名以及与其相对应的类名的前缀看到，对于 NIO 以及 OIO 传输两者来说，都有相关的 EventLoopGroup 和Channel 实现。
+
+```html
+channel
+├───nio
+│ NioEventLoopGroup
+├───oio
+│ OioEventLoopGroup
+└───socket
+  	  ├───nio
+	  │		NioDatagramChannel
+	  │ 	NioServerSocketChannel
+	  │     NioSocketChannel
+	  └───oio
+			OioDatagramChannel
+			OioServerSocketChannel
+			OioSocketChannel
+
+```
+
+```java
+    /**
+     * 代码清单 8-3 不兼容的 Channel 和 EventLoopGroup
+     * 不能混用具有不同前缀的组件，否则抛出异常IllegalStateException
+     * */
+    public void bootstrap() {
+        EventLoopGroup group = new NioEventLoopGroup();
+        //创建一个新的 Bootstrap 类的实例，以创建新的客户端Channel
+        Bootstrap bootstrap = new Bootstrap();
+        //指定一个适用于 NIO 的 EventLoopGroup 实现
+        bootstrap.group(group)
+            //指定一个适用于 OIO 的 Channel 实现类
+            .channel(OioSocketChannel.class)
+            //设置一个用于处理 Channel的 I/O 事件和数据的 ChannelInboundHandler
+                .handler(new SimpleChannelInboundHandlerEt());
+        //尝试连接到远程节点
+        ChannelFuture future = bootstrap.connect(
+                new InetSocketAddress("www.manning.com", 80));
+        future.syncUninterruptibly();
+    }
+```
+
+## 8.3 引导服务器
+
+### 8.3.1 ServerBootstrap 类
+
+| ServerBootstrap 类的方法 | 描述                                                         |
+| ------------------------ | ------------------------------------------------------------ |
+| group                    | 设置 ServerBootstrap 要用的 EventLoopGroup。这个 EventLoopGroup将用于 ServerChannel 和被接受的子 Channel 的 I/O 处理 |
+| channel                  | 设置将要被实例化的 ServerChannel 类                          |
+| channelFactory           | 如果不能通过默认的构造函数 创建Channel，那么可以提供一个ChannelFactory |
+| localAddress             | 指定 ServerChannel 应该绑定到的本地地址。如果没有指定，则将由操作系统使用一个随机地址。或者，可以通过 bind()方法来指定该 localAddress |
+| option                   | 指定要应用到新创建的 ServerChannel 的 ChannelConfig 的 ChannelOption。这些选项将会通过 bind()方法设置到 Channel。在 bind()方法被调用之后，设置或者改变 ChannelOption 都不会有任何的效果。所支持的 ChannelOption 取决于所使用的 Channel 类型。 |
+| childOption              | 指定当子 Channel 被接受时，应用到子 Channel 的 ChannelConfig 的ChannelOption。所支持的 ChannelOption 取决于所使用的 Channel 的类型。 |
+| attr                     | 指定 ServerChannel 上的属性，属性将会通过 bind()方法设置给 Channel。在调用 bind()方法之后改变它们将不会有任何的效果 |
+| childAttr                | 将属性设置给已经被接受的子 Channel。接下来的调用将不会有任何的效果 |
+| handler                  | 设置被添加到ServerChannel 的ChannelPipeline中的ChannelHandler。更加常用的方法参见 childHandler() |
+| childHandler             | 设置将被添加到已被接受的子 Channel 的 ChannelPipeline 中的 ChannelHandler。handler()方法和 childHandler()方法之间的区别是：前者所添加的 ChannelHandler 由接受子 Channel 的 ServerChannel 处理，而childHandler()方法所添加的 ChannelHandler 将由已被接受的子 Channel处理，其代表一个绑定到远程节点的套接字 |
+| clone                    | 克隆一个设置和原始的 ServerBootstrap 相同的 ServerBootstrap  |
+| bind                     | 绑定 ServerChannel 并且返回一个 ChannelFuture，其将会在绑定操作完成后收到通知（带着成功或者失败的结果） |
+
+### 8.3.2 引导服务器
+
+![å¾ 8-3 ServerBootstrap å ServerChannel.png](https://github.com/jzz-12-6/image/blob/master/netty-in-action/%E5%9B%BE%208-3%20ServerBootstrap%20%E5%92%8C%20ServerChannel.png?raw=true)
+
+```java
+    /**
+     * 代码清单 8-4 引导服务器
+     * */
+    public void bootstrap() {
+        NioEventLoopGroup group = new NioEventLoopGroup();
+        //创建 Server Bootstrap
+        ServerBootstrap bootstrap = new ServerBootstrap();
+        //设置 EventLoopGroup，其提供了用于处理 Channel 事件的EventLoop
+        bootstrap.group(group)
+            //指定要使用的 Channel 实现
+            .channel(NioServerSocketChannel.class)
+            //设置用于处理已被接受的子 Channel 的I/O及数据的 ChannelInboundHandler
+            .childHandler(new SimpleChannelInboundHandlerEt());
+        //通过配置好的 ServerBootstrap 的实例绑定该 Channel
+        ChannelFuture future = bootstrap.bind(new InetSocketAddress(8080));
+        future.addListener((ChannelFuture channelFuture)->{
+            if (channelFuture.isSuccess()) {
+                System.out.println("Server bound");
+            } else {
+                System.err.println("Bind attempt failed");
+                channelFuture.cause().printStackTrace();
+            }
+        });
+    }
+    class SimpleChannelInboundHandlerEt extends SimpleChannelInboundHandler<ByteBuf>{
+
+        @Override
+        protected void messageReceived(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
+            System.out.println("Received data");
+        }
+    }
+```
+
+## 8.4 从 Channel 引导客户端
+
+​	通过将已被接受的子 Channel 的 EventLoop 传递给 Bootstrap的 group()方法来共享该EventLoop。因为分配给 EventLoop 的所有 Channel 都使用同一个线程，所以这避免了额外的线程创建，以及前面所提到的相关的上下文切换。
+
+![å¾ 8-4 å¨ä¸¤ä¸ª Channel ä¹é´å±äº« EventLoop.png](https://github.com/jzz-12-6/image/blob/master/netty-in-action/%E5%9B%BE%208-4%20%E5%9C%A8%E4%B8%A4%E4%B8%AA%20Channel%20%E4%B9%8B%E9%97%B4%E5%85%B1%E4%BA%AB%20EventLoop.png?raw=true)
+
+```java
+    /**
+     * 代码清单 8-5 引导服务器
+     * */
+    public void bootstrap() {
+        //创建 ServerBootstrap 以创建 ServerSocketChannel，并绑定它
+        ServerBootstrap bootstrap = new ServerBootstrap();
+        //设置 EventLoopGroup，其将提供用以处理 Channel 事件的 EventLoop
+        bootstrap.group(new NioEventLoopGroup(), new NioEventLoopGroup())
+            //指定要使用的 Channel 实现
+            .channel(NioServerSocketChannel.class)
+            //设置用于处理已被接受的子 Channel 的 I/O 和数据的 ChannelInboundHandler
+            .childHandler(new SimpleChannelInboundHandlerEt());
+        //通过配置好的 ServerBootstrap 绑定该 ServerSocketChannel
+        ChannelFuture future = bootstrap.bind(new InetSocketAddress(8080));
+        future.addListener((ChannelFuture channelFuture)->{
+            if (channelFuture.isSuccess()) {
+                System.out.println("Server bound");
+            } else {
+                System.err.println("Bind attempt failed");
+                channelFuture.cause().printStackTrace();
+            }
+        });
+    }
+
+    class SimpleChannelInboundHandlerEt extends SimpleChannelInboundHandler<ByteBuf>{
+        ChannelFuture connectFuture;
+        @Override
+        protected void messageReceived(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
+            if (connectFuture.isDone()) {
+                //当连接完成时，执行一些数据操作（如代理）
+                // do something with the data
+            }
+        }
+
+        @Override
+        public void channelActive(ChannelHandlerContext ctx) throws Exception {
+            //创建一个 Bootstrap 类的实例以连接到远程主机
+            Bootstrap bootstrap = new Bootstrap();
+            bootstrap
+                    .channel(NioSocketChannel.class)
+                    .handler(new SimpleChannelInboundHandlerEt2());
+            //使用与分配给已被接受的子Channel相同的EventLoop
+            bootstrap.group(ctx.channel().eventLoop());
+            connectFuture = bootstrap.connect(
+                    //连接到远程节点
+                    new InetSocketAddress("www.manning.com", 80));
+
+            super.channelActive(ctx);
+        }
+    }
+
+    class SimpleChannelInboundHandlerEt2 extends SimpleChannelInboundHandler<ByteBuf>{
+
+        @Override
+        protected void messageReceived(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
+            System.out.println("Received data");
+        }
+    }
+```
+
+## 8.5 在引导过程中添加多个 ChannelHandler
+
+```java
+public abstract class ChannelInitializer<C extends Channel>
+extends ChannelInboundHandlerAdapter{
+//将多个 ChannelHandler 添加到一个 ChannelPipeline
+//且一旦 Channel 被注册到了它的 EventLoop 之后，就会调用你的initChannel()版本。在该方法返回之后，ChannelInitializer 的实例将会从 ChannelPipeline 中移除它自己
+protected abstract void initChannel(C ch) throws Exception;
+}
+    /**
+     * 代码清单 8-6 引导和使用 ChannelInitializer
+     * */
+    public void bootstrap() throws InterruptedException {
+        //创建 ServerBootstrap 以创建和绑定新的 Channel
+        ServerBootstrap bootstrap = new ServerBootstrap();
+        //设置 EventLoopGroup，其将提供用以处理 Channel 事件的 EventLoop
+        bootstrap.group(new NioEventLoopGroup(), new NioEventLoopGroup())
+            //指定 Channel 的实现
+            .channel(NioServerSocketChannel.class)
+            //注册一个 ChannelInitializerImpl 的实例来设置 ChannelPipeline
+            .childHandler(new ChannelInitializerImpl());
+        //绑定到地址
+        ChannelFuture future = bootstrap.bind(new InetSocketAddress(8080));
+        future.sync();
+    }
+
+    //用以设置 ChannelPipeline 的自定义 ChannelInitializerImpl 实现
+    final class ChannelInitializerImpl extends ChannelInitializer<Channel> {
+        @Override
+        //将所需的 ChannelHandler 添加到 ChannelPipeline
+        protected void initChannel(Channel ch) throws Exception {
+            ChannelPipeline pipeline = ch.pipeline();
+            pipeline.addLast(new HttpClientCodec());
+            pipeline.addLast(new HttpObjectAggregator(Integer.MAX_VALUE));
+
+        }
+    }
+```
+
+## 8.6 使用 Netty 的 ChannelOption 和属性
+
+​	以使用 option()方法来将 ChannelOption 应用到引导。
+
+```java
+    /**
+     * 代码清单 8-7 使用属性值
+     * */
+    public void bootstrap() {
+        //创建一个 AttributeKey 以标识该属性
+        final AttributeKey<Integer> id = AttributeKey.newInstance("ID");
+        //创建一个 Bootstrap 类的实例以创建客户端 Channel 并连接它们
+        Bootstrap bootstrap = new Bootstrap();
+        //设置 EventLoopGroup，其提供了用以处理 Channel 事件的 EventLoop
+        bootstrap.group(new NioEventLoopGroup())
+            //指定 Channel 的实现
+            .channel(NioSocketChannel.class)
+            .handler(
+                //设置用以处理 Channel 的 I/O 以及数据的 ChannelInboundHandler
+                new SimpleChannelInboundHandler<ByteBuf>() {
+                    @Override
+                    public void channelRegistered(ChannelHandlerContext ctx)
+                        throws Exception {
+                        //使用 AttributeKey 检索属性以及它的值
+                        Integer idValue = ctx.channel().attr(id).get();
+                        // do something with the idValue
+                    }
+
+                    @Override
+                    protected void messageReceived(
+                        ChannelHandlerContext channelHandlerContext,
+                        ByteBuf byteBuf) throws Exception {
+                        System.out.println("Received data");
+                    }
+                }
+            );
+        //设置 ChannelOption，其将在 connect()或者bind()方法被调用时被设置到已经创建的 Channel 上
+        bootstrap.option(ChannelOption.SO_KEEPALIVE, true)
+            .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000);
+        //存储该 id 属性
+        bootstrap.attr(id, 123456);
+        //使用配置好的 Bootstrap 实例连接到远程主机
+        ChannelFuture future = bootstrap.connect(
+            new InetSocketAddress("www.manning.com", 80));
+        future.syncUninterruptibly();
+    }
+```
+
+## 8.7 引导 DatagramChannel
+
+```java
+    /**
+     * 代码清单 8-8 使用 Bootstrap 和 DatagramChannel
+     * 用于无连接的协议
+     */
+    public void bootstrap() {
+        //创建一个 Bootstrap 的实例以创建和绑定新的数据报 Channel
+        Bootstrap bootstrap = new Bootstrap();
+        //设置 EventLoopGroup，其提供了用以处理 Channel 事件的 EventLoop
+        bootstrap.group(new OioEventLoopGroup()).channel(
+            //指定 Channel 的实现
+            OioDatagramChannel.class).handler(
+                    //设置用以处理 Channel 的I/O 以及数据的 ChannelInboundHandler
+                    new SimpleChannelInboundHandler<DatagramPacket>() {
+                          @Override
+                          protected void messageReceived(ChannelHandlerContext ctx, DatagramPacket msg) throws Exception {
+                              
+                          }
+                      }
+        );
+        //调用 bind() 方法，因为该协议是无连接的
+        ChannelFuture future = bootstrap.bind(new InetSocketAddress(0));
+        future.addListener((ChannelFuture channelFuture)->{
+            if (channelFuture.isSuccess()) {
+                System.out.println("Channel bound");
+            } else {
+                System.err.println("Bind attempt failed");
+                channelFuture.cause().printStackTrace();
+            }
+        });
+    }
+```
+
+## 8.8 关闭
+
+​	调用 EventLoopGroup.shutdownGracefully()方法，将会返回一个 Future，这个 Future 将在关闭完成时接收到通知shutdownGracefully()方法也是一个异步的操作，所以你需要阻塞等待直到它完成，或者向所返回的 Future 注册一个监听器以在关闭完成时获得通知。
+
+```java
+    /**
+     * 代码清单 8-9 优雅关闭
+     */
+    public void bootstrap() {
+        //创建处理 I/O 的EventLoopGroup
+        EventLoopGroup group = new NioEventLoopGroup();
+        //创建一个 Bootstrap 类的实例并配置它
+        Bootstrap bootstrap = new Bootstrap();
+        bootstrap.group(group)
+             .channel(NioSocketChannel.class)
+        //...
+             .handler(
+                new SimpleChannelInboundHandler<ByteBuf>() {
+                    @Override
+                    protected void messageReceived(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf)  {
+                        System.out.println("Received data");
+                    }
+                }
+             );
+        bootstrap.connect(new InetSocketAddress("www.manning.com", 80)).syncUninterruptibly();
+        //,,,
+        //shutdownGracefully()方法将释放所有的资源，并且关闭所有的当前正在使用中的 Channel
+        Future<?> future = group.shutdownGracefully();
+        // block until the group has shutdown
+        future.syncUninterruptibly();
+    }
+```
+
+# 第 9 章  单元测试
+
+## 9.1 EmbeddedChannel 概述
+
+​	将入站数据或者出站数据写入到 EmbeddedChannel 中，然后检查是否有任何东西到达了 ChannelPipeline 的尾端。以这种方式，你便可以确定消息是否已经被编码或者被解码过了，以及是否触发了任何的 ChannelHandler 动作。
+
+| EmbeddedChannel 方法              | 职责                                                         |
+| --------------------------------- | ------------------------------------------------------------ |
+| writeInbound(<br/>Object... msgs) | 将入站消息写到 EmbeddedChannel 中。如果可以通过 readInbound()方法从 EmbeddedChannel 中读取数据，则返回 true |
+| readInbound()                     | 从 EmbeddedChannel 中读取一个入站消息。任何返回的东西都穿越了整个 ChannelPipeline。如果没有任何可供读取的，则返回 null |
+|                                   |                                                              |
+|                                   |                                                              |
+|                                   |                                                              |
 

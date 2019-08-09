@@ -15,7 +15,6 @@ import java.net.InetSocketAddress;
 /**
  * 代码清单 8-7 使用属性值
  *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
  */
 public class BootstrapClientWithOptionsAndAttrs {
 
@@ -43,7 +42,7 @@ public class BootstrapClientWithOptionsAndAttrs {
                     }
 
                     @Override
-                    protected void channelRead0(
+                    protected void messageReceived(
                         ChannelHandlerContext channelHandlerContext,
                         ByteBuf byteBuf) throws Exception {
                         System.out.println("Received data");

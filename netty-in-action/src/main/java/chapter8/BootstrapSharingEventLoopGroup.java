@@ -32,55 +32,51 @@ public class BootstrapSharingEventLoopGroup {
             //指定要使用的 Channel 实现
             .channel(NioServerSocketChannel.class)
             //设置用于处理已被接受的子 Channel 的 I/O 和数据的 ChannelInboundHandler
-            .childHandler(
-                new SimpleChannelInboundHandler<ByteBuf>() {
-                    ChannelFuture connectFuture;
-                    @Override
-                    public void channelActive(ChannelHandlerContext ctx)
-                        throws Exception {
-                        //创建一个 Bootstrap 类的实例以连接到远程主机
-                        Bootstrap bootstrap = new Bootstrap();
-                        //指定 Channel 的实现
-                        bootstrap.channel(NioSocketChannel.class).handler(
-                            //为入站 I/O 设置 ChannelInboundHandler
-                            new SimpleChannelInboundHandler<ByteBuf>() {
-                                @Override
-                                protected void channelRead0(
-                                    ChannelHandlerContext ctx, ByteBuf in)
-                                    throws Exception {
-                                    System.out.println("Received data");
-                                }
-                            });
-                        //使用与分配给已被接受的子Channel相同的EventLoop
-                        bootstrap.group(ctx.channel().eventLoop());
-                        connectFuture = bootstrap.connect(
-                            //连接到远程节点
-                            new InetSocketAddress("www.manning.com", 80));
-                    }
-
-                    @Override
-                    protected void channelRead0(
-                        ChannelHandlerContext channelHandlerContext,
-                            ByteBuf byteBuf) throws Exception {
-                        if (connectFuture.isDone()) {
-                            //当连接完成时，执行一些数据操作（如代理）
-                            // do something with the data
-                        }
-                    }
-                });
+            .childHandler(new SimpleChannelInboundHandlerEt());
         //通过配置好的 ServerBootstrap 绑定该 ServerSocketChannel
         ChannelFuture future = bootstrap.bind(new InetSocketAddress(8080));
-        future.addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture channelFuture)
-                throws Exception {
-                if (channelFuture.isSuccess()) {
-                    System.out.println("Server bound");
-                } else {
-                    System.err.println("Bind attempt failed");
-                    channelFuture.cause().printStackTrace();
-                }
+        future.addListener((ChannelFuture channelFuture)->{
+            if (channelFuture.isSuccess()) {
+                System.out.println("Server bound");
+            } else {
+                System.err.println("Bind attempt failed");
+                channelFuture.cause().printStackTrace();
             }
         });
+    }
+
+    class SimpleChannelInboundHandlerEt extends SimpleChannelInboundHandler<ByteBuf>{
+        ChannelFuture connectFuture;
+        @Override
+        protected void messageReceived(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
+            if (connectFuture.isDone()) {
+                //当连接完成时，执行一些数据操作（如代理）
+                // do something with the data
+            }
+        }
+
+        @Override
+        public void channelActive(ChannelHandlerContext ctx) throws Exception {
+            //创建一个 Bootstrap 类的实例以连接到远程主机
+            Bootstrap bootstrap = new Bootstrap();
+            bootstrap
+                    .channel(NioSocketChannel.class)
+                    .handler(new SimpleChannelInboundHandlerEt2());
+            //使用与分配给已被接受的子Channel相同的EventLoop
+            bootstrap.group(ctx.channel().eventLoop());
+            connectFuture = bootstrap.connect(
+                    //连接到远程节点
+                    new InetSocketAddress("www.manning.com", 80));
+
+            super.channelActive(ctx);
+        }
+    }
+
+    class SimpleChannelInboundHandlerEt2 extends SimpleChannelInboundHandler<ByteBuf>{
+
+        @Override
+        protected void messageReceived(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
+            System.out.println("Received data");
+        }
     }
 }

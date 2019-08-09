@@ -25,6 +25,7 @@ public class InvalidBootstrapClient {
 
     /**
      * 代码清单 8-3 不兼容的 Channel 和 EventLoopGroup
+     * 不能混用具有不同前缀的组件，否则抛出异常IllegalStateException
      * */
     public void bootstrap() {
         EventLoopGroup group = new NioEventLoopGroup();
