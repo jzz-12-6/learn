@@ -32,7 +32,14 @@ public class BootstrapClient {
             //指定要使用的Channel 实现
             .channel(NioSocketChannel.class)
             //设置用于 Channel 事件和数据的ChannelInboundHandler
-            .handler(new SimpleChannelInboundHandlerEt());
+            .handler(new SimpleChannelInboundHandler<ByteBuf>() {
+                    @Override
+                    protected void channelRead0(
+                            ChannelHandlerContext channelHandlerContext,
+                            ByteBuf byteBuf) throws Exception {
+                        System.out.println("Received data");
+                    }
+                });
         //连接到远程主机
         ChannelFuture future = bootstrap.connect(
             new InetSocketAddress("www.manning.com", 80));

@@ -31,7 +31,13 @@ public class BootstrapServer {
             //指定要使用的 Channel 实现
             .channel(NioServerSocketChannel.class)
             //设置用于处理已被接受的子 Channel 的I/O及数据的 ChannelInboundHandler
-            .childHandler(new SimpleChannelInboundHandlerEt());
+                .childHandler(new SimpleChannelInboundHandler<ByteBuf>() {
+                    @Override
+                    protected void channelRead0(ChannelHandlerContext channelHandlerContext,
+                                                ByteBuf byteBuf) throws Exception {
+                        System.out.println("Received data");
+                    }
+                });
         //通过配置好的 ServerBootstrap 的实例绑定该 Channel
         ChannelFuture future = bootstrap.bind(new InetSocketAddress(8080));
         future.addListener((ChannelFuture channelFuture)->{
@@ -42,12 +48,5 @@ public class BootstrapServer {
                 channelFuture.cause().printStackTrace();
             }
         });
-    }
-    class SimpleChannelInboundHandlerEt extends SimpleChannelInboundHandler<ByteBuf>{
-
-        @Override
-        protected void messageReceived(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
-            System.out.println("Received data");
-        }
     }
 }

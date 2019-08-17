@@ -24,7 +24,7 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
     }
 
     @Override
-    protected void messageReceived(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
         //记录已接收消息的转储
         //每当接收数据时，都会调用这个方法，服务器发送的消息可能分块接收
         System.out.println(

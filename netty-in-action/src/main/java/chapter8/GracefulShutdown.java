@@ -35,7 +35,7 @@ public class GracefulShutdown {
              .handler(
                 new SimpleChannelInboundHandler<ByteBuf>() {
                     @Override
-                    protected void messageReceived(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf)  {
+                    protected void channelRead0(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf)  {
                         System.out.println("Received data");
                     }
                 }

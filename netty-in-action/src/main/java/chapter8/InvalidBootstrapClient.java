@@ -36,7 +36,14 @@ public class InvalidBootstrapClient {
             //指定一个适用于 OIO 的 Channel 实现类
             .channel(OioSocketChannel.class)
             //设置一个用于处理 Channel的 I/O 事件和数据的 ChannelInboundHandler
-                .handler(new SimpleChannelInboundHandlerEt());
+                .handler(new SimpleChannelInboundHandler<ByteBuf>() {
+                    @Override
+                    protected void channelRead0(
+                            ChannelHandlerContext channelHandlerContext,
+                            ByteBuf byteBuf) throws Exception {
+                        System.out.println("Received data");
+                    }
+                });
         //尝试连接到远程节点
         ChannelFuture future = bootstrap.connect(
                 new InetSocketAddress("www.manning.com", 80));

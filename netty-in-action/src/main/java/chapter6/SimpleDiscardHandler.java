@@ -12,7 +12,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 public class SimpleDiscardHandler extends SimpleChannelInboundHandler<Object> {
 
     @Override
-    protected void messageReceived(ChannelHandlerContext ctx, Object msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
         //不需要任何显式的资源释放
     }
 

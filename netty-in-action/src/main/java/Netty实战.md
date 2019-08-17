@@ -1,5 +1,13 @@
 # netty 实战
 
+```pom
+ <dependency>
+       <groupId>io.netty</groupId>
+       <artifactId>netty-all</artifactId>
+       <version>4.1.38.Final</version>
+</dependency>
+```
+
 # 第1章 Netty——异步和事件驱动
 
 netty设计架构方法和设计原则：
@@ -352,7 +360,7 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
     }
 
     @Override
-    protected void messageReceived(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
         //记录已接收消息的转储
         //每当接收数据时，都会调用这个方法，服务器发送的消息可能分块接收
         System.out.println(
@@ -1070,7 +1078,7 @@ ChannelRegistered--->ChannelActive--->ChannelInactive--->ChannelUnregistered
 | handlerRemoved                | 当从 ChannelPipeline 中移除ChannelHandler 时被调用    |
 | exceptionCaught               | 当处理过程中在 ChannelPipeline 中有错误产生时被调用   |
 
-### 6.1.3 ChannelInboundHandler 接口 (5.0之后合并至ChannelHandler )
+### 6.1.3 ChannelInboundHandler 接口
 
 | ChannelInboundHandler 的方法 | 描述                                                         |
 | ---------------------------- | ------------------------------------------------------------ |
@@ -1092,7 +1100,7 @@ ChannelRegistered--->ChannelActive--->ChannelInactive--->ChannelUnregistered
  */
 //标示一个Channel-Handler 可以被多个Channel安全地共享
 @Sharable
-public class DiscardHandler extends ChannelHandlerAdapter {
+public class DiscardHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         //丢弃已接收的消息
@@ -1113,7 +1121,7 @@ public class DiscardHandler extends ChannelHandlerAdapter {
 public class SimpleDiscardHandler extends SimpleChannelInboundHandler<Object> {
 
     @Override
-    protected void messageReceived(ChannelHandlerContext ctx, Object msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
         //不需要任何显式的资源释放
     }
     
@@ -1170,7 +1178,7 @@ java -Dio.netty.leakDetectionLevel=ADVANCED
  *
  */
 @Sharable
-public class DiscardInboundHandler extends ChannelHandlerAdapter {
+public class DiscardInboundHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         //通过调用 ReferenceCountUtil.release()方法释放资源
@@ -1188,7 +1196,7 @@ SimpleChannelInboundHandler实现会在消息被channelRead()方法消费之后�
  *
  */
 @Sharable
-public class DiscardOutboundHandler extends ChannelHandlerAdapter {
+public class DiscardOutboundHandler extends ChannelOutboundHandlerAdapter {
     @Override
     public void write(ChannelHandlerContext ctx,
         Object msg, ChannelPromise promise) {
@@ -1428,7 +1436,7 @@ public class WriteHandler extends ChannelHandlerAdapter {
  * 只应该在确定了你的 ChannelHandler 是线程安全的时才使用@Sharable 注解。
  */
 @Sharable
-public class SharableHandler extends ChannelHandlerAdapter {
+public class SharableHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         System.out.println("channel read message " + msg);
@@ -1447,7 +1455,7 @@ public class SharableHandler extends ChannelHandlerAdapter {
  * 代码清单 6-12 基本的入站异常处理
  * 异常会按照入站方向流动 一般异常处理放在ChannelPipeline的最后
  */
-public class InboundExceptionHandler extends ChannelHandlerAdapter {
+public class InboundExceptionHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx,
         Throwable cause) {
@@ -1492,7 +1500,7 @@ public class InboundExceptionHandler extends ChannelHandlerAdapter {
  * 代码清单 6-14 添加 ChannelFutureListener 到 ChannelPromise
  * 将 ChannelFutureListener 添加到即将作为参数传递给 ChannelOutboundHandler 的方法的 ChannelPromise
  */
-public class OutboundExceptionHandler extends ChannelHandlerAdapter {
+public class OutboundExceptionHandler extends ChannelOutboundHandlerAdapter {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         
@@ -1710,7 +1718,14 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
             //指定要使用的Channel 实现
             .channel(NioSocketChannel.class)
             //设置用于 Channel 事件和数据的ChannelInboundHandler
-            .handler(new SimpleChannelInboundHandlerEt());
+            .handler(new SimpleChannelInboundHandler<ByteBuf>() {
+                    @Override
+                    protected void channelRead0(
+                            ChannelHandlerContext channelHandlerContext,
+                            ByteBuf byteBuf) throws Exception {
+                        System.out.println("Received data");
+                    }
+                });
         //连接到远程主机
         ChannelFuture future = bootstrap.connect(
             new InetSocketAddress("www.manning.com", 80));
@@ -1762,7 +1777,14 @@ channel
             //指定一个适用于 OIO 的 Channel 实现类
             .channel(OioSocketChannel.class)
             //设置一个用于处理 Channel的 I/O 事件和数据的 ChannelInboundHandler
-                .handler(new SimpleChannelInboundHandlerEt());
+               .handler(new SimpleChannelInboundHandler<ByteBuf>() {
+                    @Override
+                    protected void channelRead0(
+                            ChannelHandlerContext channelHandlerContext,
+                            ByteBuf byteBuf) throws Exception {
+                        System.out.println("Received data");
+                    }
+                });
         //尝试连接到远程节点
         ChannelFuture future = bootstrap.connect(
                 new InetSocketAddress("www.manning.com", 80));
@@ -1806,7 +1828,13 @@ channel
             //指定要使用的 Channel 实现
             .channel(NioServerSocketChannel.class)
             //设置用于处理已被接受的子 Channel 的I/O及数据的 ChannelInboundHandler
-            .childHandler(new SimpleChannelInboundHandlerEt());
+            .childHandler(new SimpleChannelInboundHandler<ByteBuf>() {
+                    @Override
+                    protected void channelRead0(ChannelHandlerContext channelHandlerContext,
+                                                ByteBuf byteBuf) throws Exception {
+                        System.out.println("Received data");
+                    }
+                });
         //通过配置好的 ServerBootstrap 的实例绑定该 Channel
         ChannelFuture future = bootstrap.bind(new InetSocketAddress(8080));
         future.addListener((ChannelFuture channelFuture)->{
@@ -1845,7 +1873,42 @@ channel
             //指定要使用的 Channel 实现
             .channel(NioServerSocketChannel.class)
             //设置用于处理已被接受的子 Channel 的 I/O 和数据的 ChannelInboundHandler
-            .childHandler(new SimpleChannelInboundHandlerEt());
+             .childHandler(
+                        new SimpleChannelInboundHandler<ByteBuf>() {
+                            ChannelFuture connectFuture;
+                            @Override
+                            public void channelActive(ChannelHandlerContext ctx)
+                                    throws Exception {
+                                //创建一个 Bootstrap 类的实例以连接到远程主机
+                                Bootstrap bootstrap = new Bootstrap();
+                                //指定 Channel 的实现
+                                bootstrap.channel(NioSocketChannel.class).handler(
+                                        //为入站 I/O 设置 ChannelInboundHandler
+                                        new SimpleChannelInboundHandler<ByteBuf>() {
+                                            @Override
+                                            protected void channelRead0(
+                                                    ChannelHandlerContext ctx, ByteBuf in)
+                                                    throws Exception {
+                                                System.out.println("Received data");
+                                            }
+                                        });
+                                //使用与分配给已被接受的子Channel相同的EventLoop
+                                bootstrap.group(ctx.channel().eventLoop());
+                                connectFuture = bootstrap.connect(
+                                        //连接到远程节点
+                                        new InetSocketAddress("www.manning.com", 80));
+                            }
+
+                            @Override
+                            protected void channelRead0(
+                                    ChannelHandlerContext channelHandlerContext,
+                                    ByteBuf byteBuf) throws Exception {
+                                if (connectFuture.isDone()) {
+                                    //当连接完成时，执行一些数据操作（如代理）
+                                    // do something with the data
+                                }
+                            }
+                        });
         //通过配置好的 ServerBootstrap 绑定该 ServerSocketChannel
         ChannelFuture future = bootstrap.bind(new InetSocketAddress(8080));
         future.addListener((ChannelFuture channelFuture)->{
@@ -1858,40 +1921,7 @@ channel
         });
     }
 
-    class SimpleChannelInboundHandlerEt extends SimpleChannelInboundHandler<ByteBuf>{
-        ChannelFuture connectFuture;
-        @Override
-        protected void messageReceived(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
-            if (connectFuture.isDone()) {
-                //当连接完成时，执行一些数据操作（如代理）
-                // do something with the data
-            }
-        }
-
-        @Override
-        public void channelActive(ChannelHandlerContext ctx) throws Exception {
-            //创建一个 Bootstrap 类的实例以连接到远程主机
-            Bootstrap bootstrap = new Bootstrap();
-            bootstrap
-                    .channel(NioSocketChannel.class)
-                    .handler(new SimpleChannelInboundHandlerEt2());
-            //使用与分配给已被接受的子Channel相同的EventLoop
-            bootstrap.group(ctx.channel().eventLoop());
-            connectFuture = bootstrap.connect(
-                    //连接到远程节点
-                    new InetSocketAddress("www.manning.com", 80));
-
-            super.channelActive(ctx);
-        }
-    }
-
-    class SimpleChannelInboundHandlerEt2 extends SimpleChannelInboundHandler<ByteBuf>{
-
-        @Override
-        protected void messageReceived(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
-            System.out.println("Received data");
-        }
-    }
+ 
 ```
 
 ## 8.5 在引导过程中添加多个 ChannelHandler
@@ -1962,7 +1992,7 @@ protected abstract void initChannel(C ch) throws Exception;
                     }
 
                     @Override
-                    protected void messageReceived(
+                    protected void channelRead0(
                         ChannelHandlerContext channelHandlerContext,
                         ByteBuf byteBuf) throws Exception {
                         System.out.println("Received data");
@@ -1998,7 +2028,7 @@ protected abstract void initChannel(C ch) throws Exception;
                     //设置用以处理 Channel 的I/O 以及数据的 ChannelInboundHandler
                     new SimpleChannelInboundHandler<DatagramPacket>() {
                           @Override
-                          protected void messageReceived(ChannelHandlerContext ctx, DatagramPacket msg) throws Exception {
+                          protected void channelRead0(ChannelHandlerContext ctx, DatagramPacket msg) throws Exception {
                               
                           }
                       }
@@ -2035,7 +2065,7 @@ protected abstract void initChannel(C ch) throws Exception;
              .handler(
                 new SimpleChannelInboundHandler<ByteBuf>() {
                     @Override
-                    protected void messageReceived(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf)  {
+                    protected void channelRead0(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf)  {
                         System.out.println("Received data");
                     }
                 }
@@ -2055,11 +2085,407 @@ protected abstract void initChannel(C ch) throws Exception;
 
 ​	将入站数据或者出站数据写入到 EmbeddedChannel 中，然后检查是否有任何东西到达了 ChannelPipeline 的尾端。以这种方式，你便可以确定消息是否已经被编码或者被解码过了，以及是否触发了任何的 ChannelHandler 动作。
 
-| EmbeddedChannel 方法              | 职责                                                         |
-| --------------------------------- | ------------------------------------------------------------ |
-| writeInbound(<br/>Object... msgs) | 将入站消息写到 EmbeddedChannel 中。如果可以通过 readInbound()方法从 EmbeddedChannel 中读取数据，则返回 true |
-| readInbound()                     | 从 EmbeddedChannel 中读取一个入站消息。任何返回的东西都穿越了整个 ChannelPipeline。如果没有任何可供读取的，则返回 null |
-|                                   |                                                              |
-|                                   |                                                              |
-|                                   |                                                              |
+| EmbeddedChannel 方法               | 职责                                                         |
+| ---------------------------------- | ------------------------------------------------------------ |
+| writeInbound(<br/>Object... msgs)  | 将入站消息写到 EmbeddedChannel 中。如果可以通过 readInbound()方法从 EmbeddedChannel 中读取数据，则返回 true |
+| readInbound()                      | 从 EmbeddedChannel 中读取一个入站消息。任何返回的东西都穿越了整个 ChannelPipeline。如果没有任何可供读取的，则返回 null |
+| writeOutbound(<br/>Object... msgs) | 将出站消息写到EmbeddedChannel中。如果现在可以通过readOutbound()方法从 EmbeddedChannel 中读取到什么东西，则返回 true |
+| readOutbound()                     | 从 EmbeddedChannel 中读取一个出站消息。任何返回的东西都穿越了整个 ChannelPipeline。如果没有任何可供读取的，则返回 null |
+| finish()                           | 将 EmbeddedChannel 标记为完成，并且如果有可被读取的入站数据或者出站数据，则返回 true。这个方法还将会调用 EmbeddedChannel 上的close()方法 |
+
+​	入站数据由 ChannelInboundHandler 处理，代表从远程节点读取的数据。出站数据由ChannelOutboundHandler 处理，代表将要写到远程节点的数据。使用 writeOutbound()方法将消息写到 Channel 中，并通过 ChannelPipeline 沿着出站的方向传递。随后，你可以使用 readOutbound()方法来读取已被处理过的消息，以确定结果是否和预期一样。消息都将会传递过 ChannelPipeline，并且被相关的 ChannelInboundHandler 或者 ChannelOutboundHandler 处理。如果消息没有被消费，那么你可以使用readInbound()或者readOutbound()方法来在处理过了这些消息之后，酌情把它们从Channel中读出来
+
+![å¾ 9-1 EmbeddedChannel çæ°æ®æµ.png](https://github.com/jzz-12-6/image/blob/master/netty-in-action/%E5%9B%BE%209-1%20EmbeddedChannel%20%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B5%81.png?raw=true)
+
+## 9.2 使用 EmbeddedChannel 测试 ChannelHandler
+
+### 9.2.1 测试入站消息
+
+```java
+/**
+ * 代码清单9-1 FixedLengthFrameDecoder
+ *
+ * 扩展 ByteToMessageDecoder 以处理入站字节，并将它们解码为消息
+ */
+public class FixedLengthFrameDecoder extends ByteToMessageDecoder {
+    private final int frameLength;
+
+    /**
+     * 指定要生成的帧的长度
+     * @param frameLength 长度
+     */
+    public FixedLengthFrameDecoder(int frameLength) {
+        if (frameLength <= 0) {
+            throw new IllegalArgumentException("frameLength must be a positive integer: " + frameLength);
+        }
+        this.frameLength = frameLength;
+    }
+
+    @Override
+    protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
+        //检查是否有足够的字节可以被读取，以生成下一个帧
+        while (in.readableBytes() >= frameLength) {
+            //从 ByteBuf 中读取一个新帧
+            ByteBuf buf = in.readBytes(frameLength);
+            //将该帧添加到已被解码的消息列表中
+            out.add(buf);
+        }
+    }
+}
+
+    /**
+     * 一个包含 9 个可读字节的 ByteBuf 被解码为 3个 ByteBuf，每个都包含了 3 字节。
+     */
+    @Test
+    public void testFramesDecoded() {
+        //创建一个 ByteBuf，并存储 9 字节
+        ByteBuf buf = Unpooled.buffer();
+        for (int i = 0; i < 9; i++) {
+            buf.writeByte(i);
+        }
+        ByteBuf input = buf.duplicate();
+        //创建一个EmbeddedChannel，并添加一个FixedLengthFrameDecoder，其将以 3 字节的帧长度被测试
+        EmbeddedChannel channel = new EmbeddedChannel(new FixedLengthFrameDecoder(3));
+        // write bytes
+        //将数据写入EmbeddedChannel
+        assertTrue(channel.writeInbound(input.retain()));
+        //标记 Channel 为已完成状态
+        assertTrue(channel.finish());
+
+        // read messages
+        //读取所生成的消息，并且验证是否有 3 帧（切片），其中每帧（切片）都为 3 字节
+        ByteBuf read = (ByteBuf) channel.readInbound();
+        assertEquals(buf.readSlice(3), read);
+        read.release();
+
+        read = (ByteBuf) channel.readInbound();
+        assertEquals(buf.readSlice(3), read);
+        read.release();
+
+        read = (ByteBuf) channel.readInbound();
+        assertEquals(buf.readSlice(3), read);
+        read.release();
+
+        assertNull(channel.readInbound());
+        buf.release();
+    }
+    /**
+     * 入站 ByteBuf 是通过两个步骤写入的
+     */
+    @Test
+    public void testFramesDecoded2() {
+        ByteBuf buf = Unpooled.buffer();
+        for (int i = 0; i < 9; i++) {
+            buf.writeByte(i);
+        }
+        ByteBuf input = buf.duplicate();
+
+        EmbeddedChannel channel = new EmbeddedChannel(new FixedLengthFrameDecoder(3));
+        //返回 false，因为没有一个完整的可供读取的帧
+        assertFalse(channel.writeInbound(input.readBytes(2)));
+        assertTrue(channel.writeInbound(input.readBytes(7)));
+
+        assertTrue(channel.finish());
+        ByteBuf read = (ByteBuf) channel.readInbound();
+        assertEquals(buf.readSlice(3), read);
+        read.release();
+
+        read = (ByteBuf) channel.readInbound();
+        assertEquals(buf.readSlice(3), read);
+        read.release();
+
+        read = (ByteBuf) channel.readInbound();
+        assertEquals(buf.readSlice(3), read);
+        read.release();
+
+        assertNull(channel.readInbound());
+        buf.release();
+    }
+```
+
+### 9.2.2 测试出站消息
+
+```java
+/**
+ * 代码清单9-3 AbsIntegerEncoder
+ *
+ * 扩展 MessageToMessageEncoder 以将一个消息编码为另外一种格式
+ */
+public class AbsIntegerEncoder extends MessageToMessageEncoder<ByteBuf> {
+    @Override
+    protected void encode(ChannelHandlerContext channelHandlerContext,
+        ByteBuf in, List<Object> out) throws Exception {
+        //检查是否有足够的字节用来编码
+        while (in.readableBytes() >= 4) {
+            //从输入的 ByteBuf中读取下一个整数，并且计算其绝对值
+            int value = Math.abs(in.readInt());
+            //将该整数写入到编码消息的 List 中
+            out.add(value);
+        }
+    }
+        @Test
+    public void testEncoded() {
+        //(1) 创建一个 ByteBuf，并且写入 9 个负整数
+        ByteBuf buf = Unpooled.buffer();
+        for (int i = 1; i < 10; i++) {
+            buf.writeInt(i * -1);
+        }
+
+        //(2) 创建一个EmbeddedChannel，并安装一个要测试的 AbsIntegerEncoder
+        EmbeddedChannel channel = new EmbeddedChannel(
+            new AbsIntegerEncoder());
+        //(3) 写入 ByteBuf，并断言调用 readOutbound()方法将会产生数据
+        assertTrue(channel.writeOutbound(buf));
+        //(4) 将该 Channel 标记为已完成状态
+        assertTrue(channel.finish());
+
+        // read bytes
+        //(5) 读取所产生的消息，并断言它们包含了对应的绝对值
+        for (int i = 1; i < 10; i++) {
+            assertEquals((long)i, (long)channel.readOutbound());
+        }
+        assertNull(channel.readOutbound());
+    }
+}
+
+```
+
+## 9.3 测试异常处理
+
+```java
+/**
+ * 代码清单9-5 FrameChunkDecoder
+ *
+ * 扩展 ByteToMessageDecoder以将入站字节解码为消息
+ */
+public class FrameChunkDecoder extends ByteToMessageDecoder {
+    private final int maxFrameSize;
+
+    /**
+     * 指定将要产生的帧的最大允许大小
+     * @param maxFrameSize 大小
+     */
+    public FrameChunkDecoder(int maxFrameSize) {
+        this.maxFrameSize = maxFrameSize;
+    }
+
+    @Override
+    protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
+        int readableBytes = in.readableBytes();
+        if (readableBytes > maxFrameSize) {
+            // discard the bytes
+            //如果该帧太大，则丢弃它并抛出一个 TooLongFrameException……
+            in.clear();
+            throw new TooLongFrameException();
+        }
+        //……否则，从 ByteBuf 中读取一个新的帧
+        ByteBuf buf = in.readBytes(readableBytes);
+        //将该帧添加到解码 读取一个新的帧消息的 List 中
+        out.add(buf);
+    }
+        @Test
+    public void testFramesDecoded() {
+        //创建一个 ByteBuf，并向它写入 9 字节
+        ByteBuf buf = Unpooled.buffer();
+        for (int i = 0; i < 9; i++) {
+            buf.writeByte(i);
+        }
+        ByteBuf input = buf.duplicate();
+
+        //创建一个 EmbeddedChannel，并向其安装一个帧大小为 3 字节的 FixedLengthFrameDecoder
+        EmbeddedChannel channel = new EmbeddedChannel(new FrameChunkDecoder(3));
+
+        //向它写入 2 字节，并断言它们将会产生一个新帧
+        assertTrue(channel.writeInbound(input.readBytes(2)));
+        try {
+            //写入一个 4 字节大小的帧，并捕获预期的TooLongFrameException
+            channel.writeInbound(input.readBytes(4));
+            //如果上面没有 们将会产生一个新帧抛出异常，那么就会到达这个断言，并且测试失败
+            Assert.fail();
+        } catch (TooLongFrameException e) {
+            // expected exception
+        }
+        //写入剩余的2字节，并断言将会产生一个有效帧
+        assertTrue(channel.writeInbound(input.readBytes(3)));
+        //将该 Channel 标记为已完成状态
+        assertTrue(channel.finish());
+
+        // Read frames
+        //读取产生的消息，并且验证值
+        ByteBuf read = (ByteBuf) channel.readInbound();
+        assertEquals(buf.readSlice(2), read);
+        read.release();
+
+        read = (ByteBuf) channel.readInbound();
+        assertEquals(buf.skipBytes(4).readSlice(3), read);
+        read.release();
+        buf.release();
+    }
+}
+```
+
+如果该类实现了 exceptionCaught()方法并处理了该异常，那么它将不会被 catch块所捕获.
+
+# 第 10 章 编解码器框架
+
+## 10.1 什么是编解码器
+
+​	每个网络应用程序都必须定义如何解析在两个节点之间来回传输的原始字节，以及如何将其和目标应用程序的数据格式做相互转换。这种转换逻辑由编解码器处理，它们每种都可以将字节流从一种格式转换为另一种格式。
+
+​	编码器是将消息转换为适合于传输的格式（最有可能的就是字节流）；而对应的解码器则是将网络字节流转换回应用程序的消息格式。因此，编码器操作出站数据，而解码器处理入站数据。
+
+## 10.2 解码器
+
+​	将字节解码为消息——ByteToMessageDecoder 和 ReplayingDecoder；
+
+​	将一种消息类型解码为另一种——MessageToMessageDecoder。
+
+​	什么时候会用到解码器呢？很简单：每当需要为 ChannelPipeline 中的下一个 ChannelInboundHandler 转换入站数据时会用到。可以将多个解码器链接在一起，以实现任意复杂的转换逻辑
+
+### 10.2.1 抽象类 ByteToMessageDecoder
+
+| ByteToMessageDecoder API                                     | 描述                                                         |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| decode(<br/>ChannelHandlerContext ctx,<br/>ByteBuf in,<br/>List<Object> out) | 这是你必须实现的唯一抽象方法。decode()方法被调用时将会传入一个包含了传入数据的 ByteBuf，以及一个用来添加解码消息的 List。对这个方法的调用将会重复进行，直到确定没有新的元素被添加到该 List，或者该 ByteBuf 中没有更多可读取的字节时为止。然后，如果该 List 不为空，那么它的内容将会被传递给ChannelPipeline 中的下一个 ChannelInboundHandler |
+| decodeLast(<br/>ChannelHandlerContext ctx,<br/>ByteBuf in,<br/>List<Object> out) | Netty提供的这个默认实现只是简单地调用了decode()方法。当Channel的状态变为非活动时，这个方法将会被调用一次。可以重写该方法以提供特殊的处理 |
+
+![å¾ 10-1 ToIntegerDecoder.png](https://github.com/jzz-12-6/image/blob/master/netty-in-action/%E5%9B%BE%2010-1%20ToIntegerDecoder.png?raw=true)
+
+```java
+/**
+ * 代码清单 10-1 ToIntegerDecoder 类扩展了 ByteToMessageDecoder
+ *
+ * 扩展ByteToMessageDecoder类，以将字节解码为特定的格式
+ */
+public class ToIntegerDecoder extends ByteToMessageDecoder {
+    @Override
+    public void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+        //检查是否至少有 4 字节可读（一个 int 的字节长度）
+        if (in.readableBytes() >= 4) {
+            //从入站 ByteBuf 中读取一个 int，并将其添加到解码消息的 List 中
+            out.add(in.readInt());
+        }
+    }
+}
+```
+
+### 10.2.2 抽象类 ReplayingDecoder
+
+```java
+//类型参数 S 指定了用于状态管理的类型，其中 Void 代表不需要状态管理
+public abstract class ReplayingDecoder<S> extends ByteToMessageDecoder
+```
+
+```java
+/**
+ * 代码清单 10-2 ToIntegerDecoder2 类扩展了 ReplayingDecoder
+ *
+ * 扩展 ReplayingDecoder<Void> 以将字节解码为消息
+ */
+public class ToIntegerDecoder2 extends ReplayingDecoder<Void> {
+    /**
+     *
+     * @param ctx ChannelHandlerContext
+     * @param in ByteBuf ReplayingDecoderByteBuf扩展了ByteBuf
+     * @param out List<Object>
+     * @throws Exception
+     */
+    @Override
+    public void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+        //从入站 ByteBuf 中读取 一个 int，并将其添加到解码消息的 List 中
+        //如果没有足够的字节可用，readInt()方法的实现将会抛出一个Error其将在基类中被捕获并处理
+        out.add(in.readInt());
+    }
+}
+```
+
+1. 并不是所有的 ByteBuf 操作都被支持，如果调用了一个不被支持的方法，将会抛出UnsupportedOperationException；
+2. ReplayingDecoder 稍慢于 ByteToMessageDecoder。
+
+如果使用 ByteToMessageDecoder 不会引入太多的复杂性，那么请使用它；否则，请使用 ReplayingDecoder。
+
+| 解码器                | 描述                                            |
+| --------------------- | ----------------------------------------------- |
+| LineBasedFrameDecoder | 使用了行尾控制字符（\n 或者\r\n）来解析消息数据 |
+| HttpObjectDecoder     | 一个 HTTP 数据的解码器                          |
+
+### 10.2.3 抽象类 MessageToMessageDecoder（两个消息格式之间进行转换）
+
+```java
+//类型参数 I 指定了 decode()方法的输入参数 msg 的类型
+public abstract class MessageToMessageDecoder<I> extends ChannelInboundHandlerAdapter
+```
+
+| MessageToMessageDecoder API                                  | 描述                                                         |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| decode(<br/>ChannelHandlerContext ctx,<br/>I msg,<br/>List<Object> out) | 对于每个需要被解码为另一种格式的入站消息来说，该方法都将会被调用。解码消息随后会被传递给 ChannelPipeline中的下一个 ChannelInboundHandler |
+
+![å¾ 10-2 IntegerToStringDecoder.png](https://github.com/jzz-12-6/image/blob/master/netty-in-action/%E5%9B%BE%2010-2%20IntegerToStringDecoder.png?raw=true)
+
+```java
+/**
+ * 代码清单 10-3 IntegerToStringDecoder 类
+ *
+ * 扩展了MessageToMessageDecoder<Integer>
+ */
+public class IntegerToStringDecoder extends MessageToMessageDecoder<Integer> {
+    @Override
+    public void decode(ChannelHandlerContext ctx, Integer msg, List<Object> out) throws Exception {
+        //将 Integer 消息转换为它的 String 表示，并将其添加到输出的 List 中
+        out.add(String.valueOf(msg));
+    }
+}
+```
+
+### 10.2.4 TooLongFrameException 类
+
+​	Netty 是一个异步框架，所以需要在字节可以解码之前在内存中缓冲它们。因此，不能让解码器缓冲大量的数据以至于耗尽可用的内存。你可以设置一个最大字节数的阈值，如果超出该阈值，则会导致抛出TooLongFrameException（随后会被 ChannelHandler.exceptionCaught()方法捕获）。
+
+```java
+/**
+ * 代码清单 10-4 TooLongFrameException
+ *
+ * 扩展 ByteToMessageDecoder 以将字节解码为消息
+ */
+public class SafeByteToMessageDecoder extends ByteToMessageDecoder {
+    private static final int MAX_FRAME_SIZE = 1024;
+    @Override
+    public void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+            int readable = in.readableBytes();
+            //检查缓冲区中是否有超过 MAX_FRAME_SIZE 个字节
+            if (readable > MAX_FRAME_SIZE) {
+                //跳过所有的可读字节，抛出 TooLongFrameException 并通知 ChannelHandler
+                in.skipBytes(readable);
+                throw new TooLongFrameException("Frame too big!");
+        }
+        // do something
+        // ...
+    }
+}
+```
+
+## 10.3 编码器
+
+### 10.3.1 抽象类 MessageToByteEncoder
+
+| MessageToByteEncoder API                                     |                                                              |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| encode(<br/>ChannelHandlerContext ctx,<br/>I msg,<br/>ByteBuf out) | encode()方法是你需要实现的唯一抽象方法。它被调用时将会传入要被该类编码为 ByteBuf 的（类型为 I 的）出站消息。该 ByteBuf 随后将会被转发给 ChannelPipeline中的下一个 ChannelOutboundHandl |
+
+```java
+/**
+ * 代码清单 10-5 ShortToByteEncoder 类
+ * 接受一个 Short 类型的实例作为消息，将它编码为 Short 的原子类型值，并将它写入 ByteBuf 中，
+ * 其将随后被转发给 ChannelPipeline 中的下一个 ChannelOutboundHandler。
+ * 每个传出的 Short 值都将会占用 ByteBuf 中的 2 字节
+ * 扩展了MessageToByteEncoder
+ */
+public class ShortToByteEncoder extends MessageToByteEncoder<Short> {
+    @Override
+    public void encode(ChannelHandlerContext ctx, Short msg, ByteBuf out) throws Exception {
+        //将 Short 写入 ByteBuf 中
+        out.writeShort(msg);
+    }
+}
+```
 

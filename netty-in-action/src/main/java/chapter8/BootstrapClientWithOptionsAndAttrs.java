@@ -42,7 +42,7 @@ public class BootstrapClientWithOptionsAndAttrs {
                     }
 
                     @Override
-                    protected void messageReceived(
+                    protected void channelRead0(
                         ChannelHandlerContext channelHandlerContext,
                         ByteBuf byteBuf) throws Exception {
                         System.out.println("Received data");

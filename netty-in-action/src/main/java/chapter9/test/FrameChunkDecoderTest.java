@@ -4,7 +4,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.TooLongFrameException;
-import nia.chapter9.FrameChunkDecoder;
+import chapter9.FrameChunkDecoder;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -13,9 +13,7 @@ import static org.junit.Assert.*;
 /**
  * 代码清单9-6 测试 FrameChunkDecoder
  *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
  */
-
 public class FrameChunkDecoderTest {
     @Test
     public void testFramesDecoded() {
@@ -27,8 +25,7 @@ public class FrameChunkDecoderTest {
         ByteBuf input = buf.duplicate();
 
         //创建一个 EmbeddedChannel，并向其安装一个帧大小为 3 字节的 FixedLengthFrameDecoder
-        EmbeddedChannel channel = new EmbeddedChannel(
-            new FrameChunkDecoder(3));
+        EmbeddedChannel channel = new EmbeddedChannel(new FrameChunkDecoder(3));
 
         //向它写入 2 字节，并断言它们将会产生一个新帧
         assertTrue(channel.writeInbound(input.readBytes(2)));

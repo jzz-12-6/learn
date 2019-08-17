@@ -10,21 +10,21 @@ import java.util.List;
 /**
  * 代码清单9-5 FrameChunkDecoder
  *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
+ * 扩展 ByteToMessageDecoder以将入站字节解码为消息
  */
-//扩展 ByteToMessageDecoder以将入站字节解码为消息
 public class FrameChunkDecoder extends ByteToMessageDecoder {
     private final int maxFrameSize;
 
-    //指定将要产生的帧的最大允许大小
+    /**
+     * 指定将要产生的帧的最大允许大小
+     * @param maxFrameSize 大小
+     */
     public FrameChunkDecoder(int maxFrameSize) {
         this.maxFrameSize = maxFrameSize;
     }
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, ByteBuf in,
-        List<Object> out)
-        throws Exception {
+    protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
         int readableBytes = in.readableBytes();
         if (readableBytes > maxFrameSize) {
             // discard the bytes

@@ -33,7 +33,7 @@ public class NettyOioServer {
                         public void initChannel(SocketChannel ch) {
                                 ch.pipeline().addLast(
                                     //添加一个 ChannelInboundHandlerAdapter以拦截和处理事件
-                                    new ChannelHandlerAdapter() {
+                                    new ChannelInboundHandlerAdapter() {
                                         @Override
                                         public void channelActive(ChannelHandlerContext ctx) {
                                             ctx.writeAndFlush(buf.duplicate())

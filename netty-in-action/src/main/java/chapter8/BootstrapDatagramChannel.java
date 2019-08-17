@@ -33,7 +33,7 @@ public class BootstrapDatagramChannel {
                     //设置用以处理 Channel 的I/O 以及数据的 ChannelInboundHandler
                     new SimpleChannelInboundHandler<DatagramPacket>() {
                           @Override
-                          protected void messageReceived(ChannelHandlerContext ctx, DatagramPacket msg) throws Exception {
+                          protected void channelRead0(ChannelHandlerContext ctx, DatagramPacket msg) throws Exception {
 
                           }
                       }

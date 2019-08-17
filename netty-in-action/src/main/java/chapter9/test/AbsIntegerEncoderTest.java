@@ -1,9 +1,10 @@
 package chapter9.test;
 
+import chapter9.AbsIntegerEncoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
-import nia.chapter9.AbsIntegerEncoder;
+import chapter9.AbsIntegerEncoder;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -33,7 +34,7 @@ public class AbsIntegerEncoderTest {
         // read bytes
         //(5) 读取所产生的消息，并断言它们包含了对应的绝对值
         for (int i = 1; i < 10; i++) {
-            assertEquals(i, channel.readOutbound());
+            assertEquals((long)i, (long)channel.readOutbound());
         }
         assertNull(channel.readOutbound());
     }
