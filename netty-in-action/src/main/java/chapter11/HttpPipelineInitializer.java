@@ -10,10 +10,8 @@ import io.netty.handler.codec.http.HttpResponseEncoder;
 
 /**
  * 代码清单 11-2 添加 HTTP 支持
- *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
+ * 只需要将正确的 ChannelHandler 添加到 ChannelPipeline 中
  */
-
 public class HttpPipelineInitializer extends ChannelInitializer<Channel> {
     private final boolean client;
 

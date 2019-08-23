@@ -12,8 +12,7 @@ import javax.net.ssl.SSLEngine;
 
 /**
  * 代码清单 11-5 使用 HTTPS
- *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
+ * 启用 HTTPS 只需要将 SslHandler 添加到 ChannelPipeline 的ChannelHandler组合中
  */
 public class HttpsCodecInitializer extends ChannelInitializer<Channel> {
     private final SslContext context;

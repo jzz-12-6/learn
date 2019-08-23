@@ -7,7 +7,6 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 /**
  * 代码清单 11-10 使用 LengthFieldBasedFrameDecoder 解码器基于长度的协议
  *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
  */
 public class LengthBasedInitializer extends ChannelInitializer<Channel> {
     @Override

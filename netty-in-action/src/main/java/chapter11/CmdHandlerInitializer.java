@@ -7,7 +7,6 @@ import io.netty.handler.codec.LineBasedFrameDecoder;
 /**
  * 代码清单 11-9 使用 ChannelInitializer 安装解码器
  *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
  */
 public class CmdHandlerInitializer extends ChannelInitializer<Channel> {
     private static final byte SPACE = (byte)' ';

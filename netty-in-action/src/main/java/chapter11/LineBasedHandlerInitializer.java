@@ -7,10 +7,8 @@ import io.netty.handler.codec.LineBasedFrameDecoder;
 /**
  * 代码清单 11-8 处理由行尾符分隔的帧
  *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
  */
-public class LineBasedHandlerInitializer extends ChannelInitializer<Channel>
-    {
+public class LineBasedHandlerInitializer extends ChannelInitializer<Channel> {
     @Override
     protected void initChannel(Channel ch) throws Exception {
         ChannelPipeline pipeline = ch.pipeline();

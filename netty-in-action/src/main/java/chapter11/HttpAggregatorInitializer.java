@@ -9,8 +9,7 @@ import io.netty.handler.codec.http.HttpServerCodec;
 
 /**
  * 代码清单 11-3 自动聚合 HTTP 的消息片段
- *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
+ * 只需要 ChannelPipeline 中添加另外一个 ChannelHandler
  */
 public class HttpAggregatorInitializer extends ChannelInitializer<Channel> {
     private final boolean isClient;

@@ -12,7 +12,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * 代码清单 11-7 发送心跳
  *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
  */
 public class IdleStateHandlerInitializer extends ChannelInitializer<Channel>
     {

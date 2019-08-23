@@ -9,15 +9,19 @@ import javax.net.ssl.SSLEngine;
 
 /**
  * 代码清单 11-1 添加 SSL/TLS 支持
- *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
+ * 使用ChannelInitializer来将SslHandler添加到ChannelPipeline
  */
 public class SslChannelInitializer extends ChannelInitializer<Channel> {
     private final SslContext context;
     private final boolean startTls;
 
-    public SslChannelInitializer(SslContext context,     //传入要使用的 SslContext
-        boolean startTls) {                              //如果设置为 true，第一个写入的消息将不会被加密（客户端应该设置为 true）
+    /**
+     * 传入要使用的 SslContext
+     * 如果设置为 true，第一个写入的消息将不会被加密（客户端应该设置为 true）
+     * @param context 要使用的 SslContext
+     * @param startTls 第一个消息是否加密
+     */
+    public SslChannelInitializer(SslContext context, boolean startTls) {
         this.context = context;
         this.startTls = startTls;
     }

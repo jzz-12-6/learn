@@ -12,9 +12,7 @@ import io.netty.handler.stream.ChunkedWriteHandler;
 /**
  * 代码清单 12-3 初始化 ChannelPipeline
  *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
  */
-//扩展了 ChannelInitializer
 public class ChatServerInitializer extends ChannelInitializer<Channel> {
     private final ChannelGroup group;
 

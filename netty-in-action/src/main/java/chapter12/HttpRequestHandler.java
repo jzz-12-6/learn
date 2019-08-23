@@ -13,9 +13,8 @@ import java.net.URL;
 /**
  * 代码清单 12-1 HTTPRequestHandler
  *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
+ * 扩展 SimpleChannelInboundHandler 以处理 FullHttpRequest 消息
  */
-//扩展 SimpleChannelInboundHandler 以处理 FullHttpRequest 消息
 public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private final String wsUri;
     private static final File INDEX;
@@ -29,8 +28,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             path = !path.contains("file:") ? path : path.substring(5);
             INDEX = new File(path);
         } catch (URISyntaxException e) {
-            throw new IllegalStateException(
-                 "Unable to locate index.html", e);
+            throw new IllegalStateException("Unable to locate index.html", e);
         }
     }
 
@@ -39,30 +37,27 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
     }
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx,
-        FullHttpRequest request) throws Exception {
+    public void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
         //(1) 如果请求了 WebSocket 协议升级，则增加引用计数（调用 retain()方法），并将它传递给下一 个 ChannelInboundHandler
-        if (wsUri.equalsIgnoreCase(request.getUri())) {
+        if (wsUri.equalsIgnoreCase(request.uri())) {
             ctx.fireChannelRead(request.retain());
         } else {
             //(2) 处理 100 Continue 请求以符合 HTTP 1.1 规范
-            if (HttpHeaders.is100ContinueExpected(request)) {
+            if (HttpUtil.is100ContinueExpected(request)) {
                 send100Continue(ctx);
             }
             //读取 index.html
             RandomAccessFile file = new RandomAccessFile(INDEX, "r");
             HttpResponse response = new DefaultHttpResponse(
-                request.getProtocolVersion(), HttpResponseStatus.OK);
-            response.headers().set(
-                HttpHeaders.Names.CONTENT_TYPE,
-                "text/html; charset=UTF-8");
-            boolean keepAlive = HttpHeaders.isKeepAlive(request);
+                request.protocolVersion(), HttpResponseStatus.OK);
+            response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=UTF-8");
+            boolean keepAlive = HttpUtil.isKeepAlive(request);
             //如果请求了keep-alive，则添加所需要的 HTTP 头信息
             if (keepAlive) {
                 response.headers().set(
-                    HttpHeaders.Names.CONTENT_LENGTH, file.length());
-                response.headers().set( HttpHeaders.Names.CONNECTION,
-                    HttpHeaders.Values.KEEP_ALIVE);
+                        HttpHeaderNames.CONTENT_LENGTH, file.length());
+                response.headers().set( HttpHeaderNames.CONNECTION,
+                        HttpHeaderValues.KEEP_ALIVE);
             }
             //(3) 将 HttpResponse 写到客户端
             ctx.write(response);

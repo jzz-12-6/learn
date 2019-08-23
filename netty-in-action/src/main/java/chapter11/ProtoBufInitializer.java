@@ -8,8 +8,7 @@ import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
 
 /**
  * 代码清单 11-14 使用 protobuf
- *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
+ * 只需要将将正确的 ChannelHandler 添加到 ChannelPipeline 中
  */
 public class ProtoBufInitializer extends ChannelInitializer<Channel> {
     private final MessageLite lite;
@@ -31,8 +30,7 @@ public class ProtoBufInitializer extends ChannelInitializer<Channel> {
         pipeline.addLast(new ObjectHandler());
     }
 
-    public static final class ObjectHandler
-        extends SimpleChannelInboundHandler<Object> {
+    public static final class ObjectHandler extends SimpleChannelInboundHandler<Object> {
         @Override
         public void channelRead0(ChannelHandlerContext ctx, Object msg)
             throws Exception {

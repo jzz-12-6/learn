@@ -9,11 +9,9 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 /**
  * 代码清单 12-2 处理文本帧
  *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
+ * 扩展 SimpleChannelInboundHandler，并处理 TextWebSocketFrame 消息
  */
-//扩展 SimpleChannelInboundHandler，并处理 TextWebSocketFrame 消息
-public class TextWebSocketFrameHandler
-    extends SimpleChannelInboundHandler<TextWebSocketFrame> {
+public class TextWebSocketFrameHandler extends SimpleChannelInboundHandler<TextWebSocketFrame> {
     private final ChannelGroup group;
 
     public TextWebSocketFrameHandler(ChannelGroup group) {
@@ -22,8 +20,7 @@ public class TextWebSocketFrameHandler
 
     //重写 userEventTriggered()方法以处理自定义事件
     @Override
-    public void userEventTriggered(ChannelHandlerContext ctx,
-        Object evt) throws Exception {
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         //如果该事件表示握手成功，则从该 ChannelPipeline 中移除HttpRequest-Handler，因为将不会接收到任何HTTP消息了
         if (evt == WebSocketServerProtocolHandler
              .ServerHandshakeStateEvent.HANDSHAKE_COMPLETE) {
@@ -39,8 +36,7 @@ public class TextWebSocketFrameHandler
     }
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx,
-        TextWebSocketFrame msg) throws Exception {
+    public void channelRead0(ChannelHandlerContext ctx, TextWebSocketFrame msg) throws Exception {
         //(3) 增加消息的引用计数，并将它写到 ChannelGroup 中所有已经连接的客户端
         group.writeAndFlush(msg.retain());
     }

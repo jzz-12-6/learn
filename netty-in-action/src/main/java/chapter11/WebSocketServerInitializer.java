@@ -13,8 +13,8 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 
 /**
  * 代码清单 11-6 在服务器端支持 WebSocket
- *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
+ * 这个类处理协议升级握手，以及 3 种控制帧——Close、Ping和Pong。
+ * Text和Binary数据帧将会被传递给下一个（由你实现的）ChannelHandler进行处理
  */
 public class WebSocketServerInitializer extends ChannelInitializer<Channel> {
     @Override
