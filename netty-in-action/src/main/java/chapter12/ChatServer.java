@@ -16,7 +16,6 @@ import java.net.InetSocketAddress;
 /**
  * 代码清单 12-4 引导服务器
  *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
  */
 public class ChatServer {
     //创建 DefaultChannelGroup，其将保存所有已经连接的 WebSocket Channel
@@ -53,11 +52,11 @@ public class ChatServer {
     }
 
     public static void main(String[] args) throws Exception {
-        if (args.length != 1) {
-            System.err.println("Please give port as argument");
-            System.exit(1);
-        }
-        int port = Integer.parseInt(args[0]);
+//        if (args.length != 1) {
+//            System.err.println("Please give port as argument");
+//            System.exit(1);
+//        }
+        int port = Integer.parseInt("8080");
         final ChatServer endpoint = new ChatServer();
         ChannelFuture future = endpoint.start(
                 new InetSocketAddress(port));

@@ -5,7 +5,6 @@ import java.net.InetSocketAddress;
 /**
  * 代码清单 13-1 LogEvent 消息
  *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
  */
 public final class LogEvent {
     public static final byte SEPARATOR = (byte) ':';

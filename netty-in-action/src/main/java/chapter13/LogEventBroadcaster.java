@@ -10,11 +10,11 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 import java.io.File;
 import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
+import java.net.URL;
 
 /**
  * 代码清单 13-3 LogEventBroadcaster
- *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
+ * 引导器
  */
 public class LogEventBroadcaster {
     private final EventLoopGroup group;
@@ -73,13 +73,13 @@ public class LogEventBroadcaster {
     }
 
     public static void main(String[] args) throws Exception {
-        if (args.length != 2) {
-            throw new IllegalArgumentException();
-        }
+        int port = 8080;
+        String filePath = LogEventBroadcaster.class.getResource("LogEventBroadcaster.class").getPath();
+        File file= new File(filePath);
         //创建并启动一个新的 LogEventBroadcaster 的实例
         LogEventBroadcaster broadcaster = new LogEventBroadcaster(
                 new InetSocketAddress("255.255.255.255",
-                    Integer.parseInt(args[0])), new File(args[1]));
+                    port), file);
         try {
             broadcaster.run();
         }

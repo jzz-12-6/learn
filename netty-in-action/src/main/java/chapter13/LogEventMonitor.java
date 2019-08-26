@@ -9,8 +9,7 @@ import java.net.InetSocketAddress;
 
 /**
  * 代码清单 13-8 LogEventMonitor
- *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
+ * 将LogEventDecoder 和LogEventHandler 安装到ChannelPipeline中
  */
 public class LogEventMonitor {
     private final EventLoopGroup group;
@@ -47,13 +46,10 @@ public class LogEventMonitor {
     }
 
     public static void main(String[] args) throws Exception {
-        if (args.length != 1) {
-            throw new IllegalArgumentException(
-            "Usage: LogEventMonitor <port>");
-        }
+        int port = 8080;
         //构造一个新的 LogEventMonitor
         LogEventMonitor monitor = new LogEventMonitor(
-            new InetSocketAddress(Integer.parseInt(args[0])));
+            new InetSocketAddress(port));
         try {
             Channel channel = monitor.bind();
             System.out.println("LogEventMonitor running");

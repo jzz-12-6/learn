@@ -12,7 +12,6 @@ import java.util.List;
 /**
  * 代码清单 13-2 LogEventEncoder
  *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
  */
 public class LogEventEncoder extends MessageToMessageEncoder<LogEvent> {
     private final InetSocketAddress remoteAddress;

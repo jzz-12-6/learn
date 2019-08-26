@@ -6,11 +6,10 @@ import io.netty.channel.SimpleChannelInboundHandler;
 /**
  * 代码清单 13-7 LogEventHandler
  *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
+ * 扩展 SimpleChannelInboundHandler 以处理 LogEvent 消息
+ * 对第一个 ChannelHandler 所创建的 LogEvent 消息执行一些处理
  */
-//扩展 SimpleChannelInboundHandler 以处理 LogEvent 消息
-public class LogEventHandler
-    extends SimpleChannelInboundHandler<LogEvent> {
+public class LogEventHandler extends SimpleChannelInboundHandler<LogEvent> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx,
@@ -21,8 +20,7 @@ public class LogEventHandler
     }
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx,
-        LogEvent event) throws Exception {
+    public void channelRead0(ChannelHandlerContext ctx, LogEvent event) throws Exception {
         //创建 StringBuilder，并且构建输出的字符串
         StringBuilder builder = new StringBuilder();
         builder.append(event.getReceivedTimestamp());

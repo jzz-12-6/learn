@@ -9,10 +9,8 @@ import javax.net.ssl.SSLEngine;
 
 /**
  * 代码清单 12-6 为 ChannelPipeline 添加加密
- *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
+ * 扩展 ChatServerInitializer 以添加加密
  */
-//扩展 ChatServerInitializer 以添加加密
 public class SecureChatServerInitializer extends ChatServerInitializer {
     private final SslContext context;
 

@@ -11,10 +11,8 @@ import java.net.InetSocketAddress;
 
 /**
  * 代码清单 12-7 向 ChatServer 添加加密
- *
- * @author <a href="mailto:norman.maurer@gmail.com">Norman Maurer</a>
+ * SecureChatServer 扩展 ChatServer 以支持加密
  */
-//SecureChatServer 扩展 ChatServer 以支持加密
 public class SecureChatServer extends ChatServer {
     private final SslContext context;
 
