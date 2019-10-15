@@ -2,6 +2,7 @@ package arrays;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -15,10 +16,197 @@ public class ArraysProgram {
 
 
     public static void main(String[] args) {
-        findRestaurant(new String[]{"Shogun", "Tapioca Express", "Burger King", "KFC"},new String[]{"KFC", "Shogun", "Burger King"});
+        maximumSwap(3214);
     }
 
+    public static int maximumSwap(int num) {
+        String s = num+"";
+        char[] chars = s.toCharArray();
+        int max = 0;
+        int index = 0;
+        for (int i = 0; i < chars.length; i++) {
+            int temp = Character.getNumericValue(chars[i]);
+            if(max < temp){
+                max = temp;
+                index = i;
+            }
+        }
+        for (int i = 0; i < chars.length; i++) {
+            int temp = Character.getNumericValue(chars[i]);
+            if(max > temp){
+                chars[i] = String.valueOf(max).toCharArray()[0];
+                chars[index] = String.valueOf(temp).toCharArray()[0];
+                break;
+            }
+        }
+        String s1 = new String(chars);
+        return Integer.parseInt(s1);
+    }
 
+    public static int[] numSmallerByFrequency(String[] queries, String[] words) {
+       //统计出最小字母出现频次
+        Integer[] queriesCount =  numSmallerByFrequency(queries);
+        Integer[] wordsCount =  numSmallerByFrequency(words);
+        List<Integer> list = new ArrayList<>();
+        for (Integer i : queriesCount) {
+            int count = 0;
+            for (Integer j : wordsCount) {
+                if(i<j){
+                    count++;
+                }
+            }
+            list.add(count);
+        }
+        int[] result = new int[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            result[i] = list.get(i);
+        }
+        return result;
+    }
+
+    public static Integer[] numSmallerByFrequency(String[] querys){
+        Integer[] ans = new Integer[querys.length];
+        for (int i = 0; i < querys.length; i++) {
+            String query = querys[i];
+            Map<Character,Integer> map = new TreeMap<>();
+            char[] chars = query.toCharArray();
+            for (char c : chars) {
+                map.merge(c,1,Integer::sum);
+            }
+            ans[i]  =((TreeMap<Character, Integer>) map).firstEntry().getValue();
+        }
+        return ans;
+    }
+    /**
+     * 给你一个日期，请你设计一个算法来判断它是对应一周中的哪一天。
+     * 您返回的结果必须是这几个值中的一个 {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}
+     * @param day 日
+     * @param month 月
+     * @param year 年
+     * @return
+     */
+    public static String dayOfTheWeek(int day, int month, int year) {
+        String[] results = {"Sunday","Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+        //蔡勒公式
+        //w = (c/4-2c+y+y/4+(13*(m+1)/5+d-1)%7
+        //c 世纪 年份/100+1
+        //y 年 一般情况下是后两位数，如果是公元前的年份且非整百数，y应该等于cMOD100+100
+        //m 月 m大于等于3，小于等于14，即在蔡勒公式中，某年的1、2月要看作上一年的13、14月来计算，比如2003年1月1日要看作2002年的13月1日来计算
+        //d 日
+        if(month==1){
+            month=13;
+            year--;
+        }else if(month==2){
+            month=14;
+            year--;
+        }
+        int c = year / 100;
+        year = year % 100;
+        month++;
+        int w = (c/4-2*c+year+year/4+(13*month)/5+day-1);
+        if (w < 0 ){
+            w = (w%7+7)%7;
+        }else {
+            w = w %7;
+        }
+        return results[w];
+    }
+
+    public static int findLengthOfLCIS(int[] nums) {
+        int length = nums.length;
+        if(length == 0){
+            return 0;
+        }
+        int start = nums[0];
+        int max = 1;
+        for (int i = 1,j=0; i < length; i++) {
+            if(nums[i] > start){
+                start = nums[i];
+                max = Math.max(max,i-j);
+                continue;
+            }else {
+                max = Math.max(max,i-j);
+                start = nums[i];
+                j = i;
+            }
+        }
+
+        return max;
+    }
+
+    public static List<List<Integer>> largeGroupPositions(String S) {
+        //避免aaa情况
+        S = S+",";
+        char[] chars = S.toCharArray();
+        char last = chars[0];
+        int index = 0;
+        List<List<Integer>> lists = new ArrayList<>();
+        for (int i = 1; i < chars.length; i++) {
+            char temp = chars[i];
+            if(temp == last){
+                continue;
+            }
+            if(i-index>2){
+               lists.add(Arrays.asList(index,i-1));
+            }
+            index =i;
+            last=chars[i];
+        }
+        return lists;
+    }
+    /**
+     * 1160. 拼写单词
+     * 给你一份『词汇表』（字符串数组） words 和一张『字母表』（字符串） chars。
+     *
+     * 假如你可以用 chars 中的『字母』（字符）拼写出 words 中的某个『单词』（字符串），那么我们就认为你掌握了这个单词。
+     *
+     * 注意：每次拼写时，chars 中的每个字母都只能用一次。
+     *
+     * 返回词汇表 words 中你掌握的所有单词的 长度之和。
+     *
+     输入：words = ["cat","bt","hat","tree"], chars = "atach"
+     输出：6
+     解释：
+     可以形成字符串 "cat" 和 "hat"，所以答案是 3 + 3 = 6。
+
+     * @param words
+     * @param chars
+     * @return
+     */
+    public static int countCharacters(String[] words, String chars) {
+        int length = words.length;
+        if(length == 0){
+            return 0;
+        }
+        Map<Character,Integer> map = new HashMap<>(chars.length());
+        char[] charArray = chars.toCharArray();
+        for (char c : charArray) {
+            map.merge(c,1, Integer::sum);
+        }
+        List<String> list = new ArrayList<>();
+        for (String word : words) {
+            char[] chars1 = word.toCharArray();
+            boolean flag = true;
+            Map<Character,Integer> map1 = new HashMap<>(chars.length());
+            for (char c : chars1) {
+                Integer integer = map.get(c);
+                if(integer == null){
+                    flag = false;
+                    break;
+                }
+                map1.merge(c,1, Integer::sum);
+                if(integer < map1.get(c)){
+                    flag = false;
+                    break;
+                }
+            }
+            //包含所需要字母
+            if(flag){
+                list.add(word);
+            }
+        }
+        return list.stream().map(l->l.toCharArray().length).mapToInt(Integer::valueOf).sum();
+    }
     /**
      * 599. 两个列表的最小索引总和
      * 假设Andy和Doris想在晚餐时选择一家餐厅，并且他们都有一个表示最喜爱餐厅的列表，每个餐厅的名字用字符串表示。
